@@ -1,0 +1,871 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Plan Board</title>
+<style>
+  :root{
+    --navy:#1F4E78;
+    --navy-dark:#163A5A;
+    --paper:#FBFAF6;
+    --grid:#E4E9EE;
+    --amber:#F2A413;
+    --amber-dark:#C6870A;
+    --ink:#1B2430;
+    --muted:#6B7684;
+    --line:#C9D2DA;
+    --danger:#B23A3A;
+    --good:#2E7D4F;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family: 'Courier New', ui-monospace, monospace;
+    background:
+      linear-gradient(var(--grid) 1px, transparent 1px) 0 0/24px 24px,
+      linear-gradient(90deg, var(--grid) 1px, transparent 1px) 0 0/24px 24px,
+      var(--paper);
+    color:var(--ink);
+    min-height:100vh;
+  }
+  .titlebar{
+    background:var(--navy);
+    color:#fff;
+    padding:18px 28px;
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    border-bottom:4px solid var(--amber);
+  }
+  .titlebar h1{
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size:22px;
+    letter-spacing:0.5px;
+    margin:0;
+  }
+  .titlebar .sub{
+    font-size:11px;
+    color:#CFE0EF;
+    letter-spacing:1.5px;
+    text-transform:uppercase;
+  }
+  .tabs{
+    display:flex;
+    gap:6px;
+    padding:14px 24px 0 24px;
+    flex-wrap:wrap;
+    align-items:flex-end;
+  }
+  .tab{
+    background:#EEF2F5;
+    border:1px solid var(--line);
+    border-bottom:none;
+    padding:9px 14px;
+    font-size:13px;
+    cursor:pointer;
+    border-radius:6px 6px 0 0;
+    color:var(--muted);
+    position:relative;
+    max-width:220px;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+  .tab.active{
+    background:var(--paper);
+    color:var(--navy-dark);
+    font-weight:bold;
+    border-color:var(--navy);
+    border-bottom:2px solid var(--paper);
+    margin-bottom:-1px;
+    z-index:2;
+  }
+  .tab .close{
+    margin-left:8px;
+    color:var(--danger);
+    font-weight:bold;
+  }
+  .tab .edit-icon{
+    margin-left:8px;
+    color:var(--navy);
+    opacity:0.7;
+  }
+  .tab .edit-icon:hover{opacity:1;}
+  .newplan-btn{
+    background:var(--amber);
+    color:#332200;
+    border:1px solid var(--amber-dark);
+    border-radius:6px 6px 0 0;
+    padding:9px 14px;
+    font-size:13px;
+    font-weight:bold;
+    cursor:pointer;
+  }
+  .newplan-btn:hover{background:var(--amber-dark); color:#fff;}
+
+  .board{
+    border:1px solid var(--navy);
+    background:var(--paper);
+    margin:0 24px 40px 24px;
+    padding:0;
+  }
+  .plan-title-row{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    padding:14px 20px;
+    background:var(--navy);
+  }
+  .plan-title-row input{
+    flex:1;
+    background:transparent;
+    border:none;
+    border-bottom:1px dashed #7FA1BF;
+    color:#fff;
+    font-family:Georgia, serif;
+    font-size:18px;
+    padding:4px 2px;
+  }
+  .plan-title-row input:focus{outline:none; border-bottom:1px solid var(--amber);}
+
+  .section{
+    padding:16px 20px;
+    border-bottom:1px solid var(--grid);
+  }
+  .section-head{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-bottom:10px;
+  }
+  .section-head h2{
+    font-family:Georgia, serif;
+    font-size:14px;
+    letter-spacing:1px;
+    text-transform:uppercase;
+    color:var(--navy-dark);
+    margin:0;
+    border-left:4px solid var(--amber);
+    padding-left:8px;
+  }
+  .add-btn{
+    background:var(--navy);
+    color:#fff;
+    border:none;
+    border-radius:4px;
+    padding:5px 10px;
+    font-size:12px;
+    cursor:pointer;
+    font-family:inherit;
+  }
+  .add-btn:hover{background:var(--navy-dark);}
+  .add-btn.amber{background:var(--amber); color:#332200; font-weight:bold;}
+  .add-btn.amber:hover{background:var(--amber-dark); color:#fff;}
+
+  .list-row{
+    display:flex;
+    gap:8px;
+    align-items:flex-start;
+    margin-bottom:8px;
+  }
+  .list-row textarea{
+    flex:1;
+    resize:vertical;
+    min-height:38px;
+    font-family:inherit;
+    font-size:13px;
+    padding:8px;
+    border:1px solid var(--line);
+    background:#fff;
+    color:var(--ink);
+  }
+  .list-row textarea:focus{outline:1px solid var(--navy);}
+  .row-remove{
+    background:none;
+    border:1px solid var(--line);
+    color:var(--danger);
+    border-radius:4px;
+    width:28px;
+    height:28px;
+    cursor:pointer;
+    flex-shrink:0;
+  }
+  .row-remove:hover{background:var(--danger); color:#fff;}
+
+  table{
+    width:100%;
+    border-collapse:collapse;
+    font-size:12px;
+  }
+  thead th{
+    background:var(--navy);
+    color:#fff;
+    text-align:left;
+    padding:8px 6px;
+    font-weight:bold;
+    letter-spacing:0.3px;
+  }
+  tbody td{
+    border:1px solid var(--grid);
+    padding:2px;
+    vertical-align:top;
+  }
+  tbody input, tbody textarea{
+    width:100%;
+    border:none;
+    background:transparent;
+    font-family:inherit;
+    font-size:12px;
+    padding:6px;
+    color:var(--ink);
+  }
+  tbody input:focus, tbody textarea:focus{outline:1px solid var(--navy); background:#fff;}
+  tbody tr:nth-child(even){background:#F5F7F9;}
+  .col-remove{width:32px; text-align:center;}
+
+  .navbar{
+    display:flex;
+    gap:10px;
+    align-items:center;
+    padding:12px 24px;
+    flex-wrap:wrap;
+    background:#EAEFF3;
+    border-bottom:1px solid var(--line);
+    position:sticky;
+    top:0;
+    z-index:10;
+  }
+  .navbar button{
+    background:#fff;
+    border:1px solid var(--navy);
+    color:var(--navy-dark);
+    padding:8px 14px;
+    border-radius:4px;
+    font-size:12px;
+    cursor:pointer;
+    font-family:inherit;
+  }
+  .navbar button:hover{background:var(--navy); color:#fff;}
+  .navbar input[type=file]{display:none;}
+  .navbar .save-btn{
+    background:var(--amber);
+    border-color:var(--amber-dark);
+    color:#332200;
+    font-weight:bold;
+  }
+  .navbar .save-btn:hover{background:var(--amber-dark); color:#fff;}
+  .save-status{
+    font-size:11px;
+    color:var(--muted);
+    align-self:center;
+    font-style:italic;
+  }
+  .save-status.warn{ color:var(--danger); font-weight:bold; font-style:normal; }
+  .save-status.good{ color:var(--good); }
+
+  .auth-box{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    margin-left:auto;
+    padding-left:14px;
+    border-left:1px solid var(--line);
+  }
+  .auth-box button{
+    background:var(--navy);
+    color:#fff;
+    border-color:var(--navy);
+  }
+  .auth-box button:hover{background:var(--navy-dark);}
+  #userInfo{
+    display:none;
+    align-items:center;
+    gap:8px;
+    font-size:12px;
+  }
+  #userEmail{
+    color:var(--navy-dark);
+    font-weight:bold;
+  }
+  .cloud-dot{
+    width:8px;
+    height:8px;
+    border-radius:50%;
+    background:var(--muted);
+    display:inline-block;
+    margin-right:4px;
+  }
+  .cloud-dot.on{background:var(--good);}
+  .cloud-dot.warn{background:var(--danger);}
+
+  .empty-hint{
+    font-size:12px;
+    color:var(--muted);
+    font-style:italic;
+    padding:4px 2px;
+  }
+
+  @media print{
+    .tabs, .newplan-btn, .navbar, .add-btn, .row-remove, .col-remove{display:none !important;}
+    body{background:#fff;}
+    .board{border:none; margin:0;}
+  }
+
+  @media (max-width:700px){
+    .titlebar{flex-direction:column; align-items:flex-start; gap:4px;}
+    .board{margin:0 10px 30px 10px;}
+    .navbar{position:static;}
+    .auth-box{margin-left:0; padding-left:0; border-left:none; width:100%; border-top:1px solid var(--line); padding-top:8px;}
+    table, thead, tbody, th, td, tr{display:block;}
+    thead{display:none;}
+    tbody tr{margin-bottom:10px; border:1px solid var(--line);}
+    tbody td{display:flex; align-items:center; gap:6px;}
+    tbody td::before{content: attr(data-label); font-weight:bold; font-size:11px; color:var(--muted); width:90px; flex-shrink:0;}
+  }
+</style>
+</head>
+<body>
+
+<div class="titlebar">
+  <div>
+    <h1>Plan Board</h1>
+    <div class="sub">Vision &middot; Motive &middot; Actions &middot; Adjustments</div>
+  </div>
+</div>
+
+<nav class="navbar">
+  <button id="saveBtn" class="save-btn" onclick="manualSave()">✓ Save Plan</button>
+  <button onclick="exportPlans()">Export all plans (.json)</button>
+  <button onclick="document.getElementById('importFile').click()">Import plans (.json)</button>
+  <input type="file" id="importFile" accept="application/json" onchange="importPlans(event)">
+  <button onclick="printBoard()">Print / Save as PDF</button>
+  <span id="saveStatus" class="save-status"></span>
+
+  <span class="auth-box">
+    <button id="signInBtn" onclick="signIn()">Sign in with Google</button>
+    <span id="userInfo">
+      <span class="cloud-dot" id="cloudDot"></span>
+      <span id="userEmail"></span>
+      <button onclick="signOutUser()">Sign out</button>
+    </span>
+  </span>
+</nav>
+
+<div class="tabs" id="tabs"></div>
+<div class="board" id="board"></div>
+
+<script>
+function uid(){ return 'p' + Math.random().toString(36).slice(2,9); }
+
+function emptyVision(){ return ""; }
+function emptyMotive(){ return ""; }
+function emptyAction(){ return {action:"", duration:"", time:"", resources:"", status:""}; }
+function emptyLog(){ return {date:"", change:"", reason:""}; }
+
+function newPlan(title){
+  return {
+    id: uid(),
+    title: title || "Untitled Plan",
+    visions: [emptyVision()],
+    motives: [emptyMotive()],
+    actions: [emptyAction()],
+    log: [emptyLog()]
+  };
+}
+
+let plans = [ newPlan("Plan 1") ];
+let activeIndex = 0;
+
+// ---------- Local persistence (always on, works with or without sign-in) ----------
+const STORAGE_KEY = "planBoardData";
+let storageAvailable = true;
+let lastSavedAt = null;
+
+function saveToStorage(){
+  try{
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({plans, activeIndex}));
+    storageAvailable = true;
+    lastSavedAt = new Date();
+  }catch(e){
+    storageAvailable = false;
+  }
+  updateSaveStatus();
+  // Also push to the cloud if the user is signed in (debounced, defined in the Firebase module below)
+  if(window.queueCloudSave) window.queueCloudSave();
+}
+function updateSaveStatus(){
+  const el = document.getElementById('saveStatus');
+  if(!el) return;
+  if(!storageAvailable){
+    el.textContent = "Local autosave unavailable — use Export to keep your work.";
+    el.className = "save-status warn";
+  } else if(lastSavedAt){
+    el.textContent = "Saved locally " + lastSavedAt.toLocaleTimeString();
+    el.className = "save-status";
+  }
+}
+function manualSave(){
+  saveToStorage();
+  const btn = document.getElementById('saveBtn');
+  if(!btn) return;
+  const original = btn.textContent;
+  btn.textContent = storageAvailable ? "\u2713 Saved" : "\u2715 Save failed";
+  setTimeout(() => { btn.textContent = original; }, 1400);
+}
+function loadFromStorage(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(!raw) return false;
+    const parsed = JSON.parse(raw);
+    if(!parsed || !Array.isArray(parsed.plans) || parsed.plans.length===0) return false;
+    plans = parsed.plans;
+    activeIndex = Math.min(parsed.activeIndex || 0, plans.length - 1);
+    return true;
+  }catch(e){ return false; }
+}
+loadFromStorage();
+
+function activePlan(){ return plans[activeIndex]; }
+
+// ---------- Structural actions (trigger re-render) ----------
+function addPlan(){
+  plans.push(newPlan("Plan " + (plans.length + 1)));
+  activeIndex = plans.length - 1;
+  render();
+}
+function removePlan(i){
+  if(plans.length === 1){ alert("At least one plan must remain."); return; }
+  if(!confirm("Delete this plan? This cannot be undone.")) return;
+  plans.splice(i,1);
+  if(activeIndex >= plans.length) activeIndex = plans.length - 1;
+  render();
+}
+function switchPlan(i){ activeIndex = i; render(); }
+function renamePlan(i){
+  const name = prompt("Edit plan name:", plans[i].title);
+  if(name !== null){
+    plans[i].title = name.trim() || "Untitled Plan";
+    render();
+  }
+}
+
+function addVision(){ activePlan().visions.push(emptyVision()); render(); }
+function removeVision(i){ activePlan().visions.splice(i,1); if(activePlan().visions.length===0) activePlan().visions.push(emptyVision()); render(); }
+
+function addMotive(){ activePlan().motives.push(emptyMotive()); render(); }
+function removeMotive(i){ activePlan().motives.splice(i,1); if(activePlan().motives.length===0) activePlan().motives.push(emptyMotive()); render(); }
+
+function addAction(){ activePlan().actions.push(emptyAction()); render(); }
+function removeAction(i){ activePlan().actions.splice(i,1); render(); }
+
+function addLog(){ activePlan().log.push(emptyLog()); render(); }
+function removeLog(i){ activePlan().log.splice(i,1); render(); }
+
+// ---------- Field updates (no re-render, so focus/cursor is preserved) ----------
+function updatePlanTitle(v){ activePlan().title = v; document.getElementById('tabs').children[activeIndex].firstChild.textContent = v || "Untitled Plan"; saveToStorage(); }
+function updateVision(i, v){ activePlan().visions[i] = v; saveToStorage(); }
+function updateMotive(i, v){ activePlan().motives[i] = v; saveToStorage(); }
+function updateAction(i, field, v){ activePlan().actions[i][field] = v; saveToStorage(); }
+function updateLog(i, field, v){ activePlan().log[i][field] = v; saveToStorage(); }
+
+// ---------- Export / Import ----------
+function exportPlans(){
+  const blob = new Blob([JSON.stringify(plans, null, 2)], {type:"application/json"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = "plans.json";
+  a.click();
+  URL.revokeObjectURL(url);
+}
+function importPlans(evt){
+  const file = evt.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e){
+    try{
+      const parsed = JSON.parse(e.target.result);
+      if(!Array.isArray(parsed) || parsed.length===0) throw new Error("bad format");
+      plans = parsed;
+      activeIndex = 0;
+      render();
+    }catch(err){
+      alert("Could not read that file — make sure it's a plans.json exported from this tool.");
+    }
+  };
+  reader.readAsText(file);
+  evt.target.value = "";
+}
+function printBoard(){ window.print(); }
+
+// ---------- Bridge for the Firebase/cloud-sync module below ----------
+// The module script can't see `plans`/`activeIndex` directly (different scope),
+// so it reads/writes state through these two functions instead.
+function getBoardState(){ return { plans, activeIndex }; }
+function setBoardState(data){
+  if(!data || !Array.isArray(data.plans) || data.plans.length===0) return;
+  plans = data.plans;
+  activeIndex = Math.min(data.activeIndex || 0, plans.length - 1);
+  render();
+}
+window.getBoardState = getBoardState;
+window.setBoardState = setBoardState;
+
+function updateAuthUI(user){
+  const signInBtn = document.getElementById('signInBtn');
+  const userInfo = document.getElementById('userInfo');
+  const userEmail = document.getElementById('userEmail');
+  if(user){
+    signInBtn.style.display = 'none';
+    userInfo.style.display = 'inline-flex';
+    userEmail.textContent = user.displayName || user.email || "Signed in";
+  } else {
+    signInBtn.style.display = 'inline-block';
+    userInfo.style.display = 'none';
+  }
+}
+window.updateAuthUI = updateAuthUI;
+
+function setCloudStatus(text, state){
+  // state: "on" | "warn" | "off"
+  const dot = document.getElementById('cloudDot');
+  if(dot) dot.className = "cloud-dot" + (state === "on" ? " on" : state === "warn" ? " warn" : "");
+  const el = document.getElementById('saveStatus');
+  if(el && text) el.textContent = text;
+}
+window.setCloudStatus = setCloudStatus;
+
+// ---------- Render ----------
+function render(){
+  renderTabs();
+  renderBoard();
+  saveToStorage();
+}
+
+function renderTabs(){
+  const tabs = document.getElementById('tabs');
+  tabs.innerHTML = "";
+  plans.forEach((p, i) => {
+    const tab = document.createElement('div');
+    tab.className = "tab" + (i===activeIndex ? " active" : "");
+    const label = document.createElement('span');
+    label.textContent = p.title || "Untitled Plan";
+    tab.appendChild(label);
+    const edit = document.createElement('span');
+    edit.className = "edit-icon";
+    edit.textContent = "\u270E";
+    edit.title = "Edit plan";
+    edit.onclick = (e) => { e.stopPropagation(); renamePlan(i); };
+    tab.appendChild(edit);
+    const close = document.createElement('span');
+    close.className = "close";
+    close.textContent = "\u00D7";
+    close.title = "Delete plan";
+    close.onclick = (e) => { e.stopPropagation(); removePlan(i); };
+    tab.appendChild(close);
+    tab.onclick = () => switchPlan(i);
+    tabs.appendChild(tab);
+  });
+  const newBtn = document.createElement('div');
+  newBtn.className = "newplan-btn";
+  newBtn.textContent = "+ New Plan";
+  newBtn.onclick = addPlan;
+  tabs.appendChild(newBtn);
+}
+
+function renderBoard(){
+  const board = document.getElementById('board');
+  const p = activePlan();
+  board.innerHTML = "";
+
+  // Title
+  const titleRow = document.createElement('div');
+  titleRow.className = "plan-title-row";
+  const titleInput = document.createElement('input');
+  titleInput.value = p.title;
+  titleInput.placeholder = "Plan title...";
+  titleInput.oninput = (e) => updatePlanTitle(e.target.value);
+  titleRow.appendChild(titleInput);
+  board.appendChild(titleRow);
+
+  // Vision
+  board.appendChild(buildListSection(
+    "Vision (Main Objective)", p.visions, updateVision, addVision, removeVision,
+    "Write a vision / main objective..."
+  ));
+
+  // Motive
+  board.appendChild(buildListSection(
+    "Motive (Why)", p.motives, updateMotive, addMotive, removeMotive,
+    "Write the motive behind this objective..."
+  ));
+
+  // Actions
+  board.appendChild(buildActionsSection(p.actions));
+
+  // Adjustments Log
+  board.appendChild(buildLogSection(p.log));
+
+  updateSaveStatus();
+}
+
+function buildListSection(heading, items, updateFn, addFn, removeFn, placeholder){
+  const section = document.createElement('div');
+  section.className = "section";
+  const head = document.createElement('div');
+  head.className = "section-head";
+  head.innerHTML = `<h2>${heading}</h2>`;
+  const addBtn = document.createElement('button');
+  addBtn.className = "add-btn amber";
+  addBtn.textContent = "+ Add";
+  addBtn.onclick = addFn;
+  head.appendChild(addBtn);
+  section.appendChild(head);
+
+  items.forEach((val, i) => {
+    const row = document.createElement('div');
+    row.className = "list-row";
+    const ta = document.createElement('textarea');
+    ta.value = val;
+    ta.placeholder = placeholder;
+    ta.oninput = (e) => updateFn(i, e.target.value);
+    row.appendChild(ta);
+    const rm = document.createElement('button');
+    rm.className = "row-remove";
+    rm.textContent = "\u2212";
+    rm.title = "Remove";
+    rm.onclick = () => removeFn(i);
+    row.appendChild(rm);
+    section.appendChild(row);
+  });
+
+  return section;
+}
+
+function buildActionsSection(actions){
+  const section = document.createElement('div');
+  section.className = "section";
+  const head = document.createElement('div');
+  head.className = "section-head";
+  head.innerHTML = `<h2>Actions (Mission)</h2>`;
+  const addBtn = document.createElement('button');
+  addBtn.className = "add-btn amber";
+  addBtn.textContent = "+ Add Action";
+  addBtn.onclick = addAction;
+  head.appendChild(addBtn);
+  section.appendChild(head);
+
+  const table = document.createElement('table');
+  table.innerHTML = `<thead><tr>
+    <th>Action</th><th>Duration</th><th>Time of Day</th><th>Resources Required</th><th>Status</th><th></th>
+  </tr></thead>`;
+  const tbody = document.createElement('tbody');
+
+  actions.forEach((a, i) => {
+    const tr = document.createElement('tr');
+
+    tr.appendChild(makeCell(a.action, "Action", (v)=>updateAction(i,'action',v), true));
+    tr.appendChild(makeCell(a.duration, "Duration", (v)=>updateAction(i,'duration',v), false, "e.g. Aug 10-24, 2026 or Every Mon/Wed"));
+    tr.appendChild(makeCell(a.time, "Time of Day", (v)=>updateAction(i,'time',v), false, "e.g. 18:00-20:00"));
+    tr.appendChild(makeCell(a.resources, "Resources", (v)=>updateAction(i,'resources',v), true));
+    tr.appendChild(makeCell(a.status, "Status", (v)=>updateAction(i,'status',v), false, "Not started / In progress / Done"));
+
+    const tdRm = document.createElement('td');
+    tdRm.className = "col-remove";
+    const rm = document.createElement('button');
+    rm.className = "row-remove";
+    rm.textContent = "\u2212";
+    rm.onclick = () => removeAction(i);
+    tdRm.appendChild(rm);
+    tr.appendChild(tdRm);
+
+    tbody.appendChild(tr);
+  });
+
+  table.appendChild(tbody);
+  section.appendChild(table);
+  return section;
+}
+
+function buildLogSection(log){
+  const section = document.createElement('div');
+  section.className = "section";
+  const head = document.createElement('div');
+  head.className = "section-head";
+  head.innerHTML = `<h2>Adjustments Log</h2>`;
+  const addBtn = document.createElement('button');
+  addBtn.className = "add-btn amber";
+  addBtn.textContent = "+ Add Entry";
+  addBtn.onclick = addLog;
+  head.appendChild(addBtn);
+  section.appendChild(head);
+
+  const table = document.createElement('table');
+  table.innerHTML = `<thead><tr><th style="width:110px;">Date</th><th>Change Made</th><th>Reason</th><th></th></tr></thead>`;
+  const tbody = document.createElement('tbody');
+
+  log.forEach((entry, i) => {
+    const tr = document.createElement('tr');
+    tr.appendChild(makeCell(entry.date, "Date", (v)=>updateLog(i,'date',v), false, "YYYY-MM-DD"));
+    tr.appendChild(makeCell(entry.change, "Change Made", (v)=>updateLog(i,'change',v), true));
+    tr.appendChild(makeCell(entry.reason, "Reason", (v)=>updateLog(i,'reason',v), true));
+
+    const tdRm = document.createElement('td');
+    tdRm.className = "col-remove";
+    const rm = document.createElement('button');
+    rm.className = "row-remove";
+    rm.textContent = "\u2212";
+    rm.onclick = () => removeLog(i);
+    tdRm.appendChild(rm);
+    tr.appendChild(tdRm);
+
+    tbody.appendChild(tr);
+  });
+
+  table.appendChild(tbody);
+  section.appendChild(table);
+  return section;
+}
+
+function makeCell(value, label, onChange, useTextarea, placeholder){
+  const td = document.createElement('td');
+  td.setAttribute('data-label', label);
+  const el = document.createElement(useTextarea ? 'textarea' : 'input');
+  if(!useTextarea) el.type = "text";
+  el.value = value;
+  if(placeholder) el.placeholder = placeholder;
+  el.oninput = (e) => onChange(e.target.value);
+  td.appendChild(el);
+  return td;
+}
+
+render();
+</script>
+
+<!-- ============================================================
+     CLOUD SYNC (Firebase Auth + Firestore)
+     Fill in YOUR_FIREBASE_CONFIG below with your own project's
+     keys (see setup instructions provided alongside this file).
+     If left unconfigured, the app still works fine — it just
+     stays local-only and the Sign in button will say so.
+     ============================================================ -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
+  import {
+    getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged
+  } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
+  import {
+    getFirestore, doc, setDoc, getDoc, serverTimestamp
+  } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+
+  // ====== PASTE YOUR FIREBASE CONFIG HERE ======
+  const firebaseConfig = {
+    apiKey: "YOUR_API_KEY",
+    authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+    projectId: "YOUR_PROJECT_ID",
+    storageBucket: "YOUR_PROJECT_ID.appspot.com",
+    messagingSenderId: "YOUR_SENDER_ID",
+    appId: "YOUR_APP_ID"
+  };
+  // ==============================================
+
+  let auth = null, db = null, currentUser = null, cloudReady = false;
+
+  function looksConfigured(cfg){
+    return cfg.apiKey && !cfg.apiKey.startsWith("YOUR_");
+  }
+
+  if(looksConfigured(firebaseConfig)){
+    try{
+      const app = initializeApp(firebaseConfig);
+      auth = getAuth(app);
+      db = getFirestore(app);
+      cloudReady = true;
+    }catch(e){
+      console.warn("Firebase failed to initialize:", e);
+    }
+  }
+
+  if(!cloudReady){
+    const btn = document.getElementById('signInBtn');
+    if(btn){ btn.title = "Cloud sync isn't set up yet — see setup instructions."; }
+  }
+
+  const provider = new GoogleAuthProvider();
+
+  window.signIn = async function(){
+    if(!cloudReady){
+      alert("Cloud sync isn't configured yet. Add your Firebase project keys in the code (see the setup instructions).");
+      return;
+    }
+    try{
+      await signInWithPopup(auth, provider);
+    }catch(e){
+      alert("Sign-in failed: " + e.message);
+    }
+  };
+
+  window.signOutUser = async function(){
+    if(!cloudReady) return;
+    await signOut(auth);
+  };
+
+  let saveTimer = null;
+  window.queueCloudSave = function(){
+    if(!cloudReady || !currentUser) return;
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(doCloudSave, 800);
+  };
+
+  async function doCloudSave(){
+    if(!cloudReady || !currentUser) return;
+    try{
+      const state = window.getBoardState();
+      await setDoc(doc(db, "planboards", currentUser.uid), {
+        plans: state.plans,
+        activeIndex: state.activeIndex,
+        updatedAt: serverTimestamp()
+      });
+      window.setCloudStatus("Synced to cloud " + new Date().toLocaleTimeString(), "on");
+    }catch(e){
+      console.warn("Cloud save failed:", e);
+      window.setCloudStatus("Cloud save failed — check your connection.", "warn");
+    }
+  }
+
+  async function loadCloudData(uid){
+    try{
+      const snap = await getDoc(doc(db, "planboards", uid));
+      if(snap.exists()){
+        const data = snap.data();
+        if(Array.isArray(data.plans) && data.plans.length){
+          window.setBoardState({ plans: data.plans, activeIndex: data.activeIndex });
+        }
+        window.setCloudStatus("Loaded from cloud", "on");
+      } else {
+        // First time this account has signed in — push current local plans up as the starting point.
+        await doCloudSave();
+        window.setCloudStatus("Cloud sync on — starting from your local plans", "on");
+      }
+    }catch(e){
+      console.warn("Cloud load failed:", e);
+      window.setCloudStatus("Could not load cloud data — showing local copy.", "warn");
+    }
+  }
+
+  if(cloudReady){
+    onAuthStateChanged(auth, (user) => {
+      currentUser = user;
+      window.updateAuthUI(user);
+      if(user){
+        loadCloudData(user.uid);
+      } else {
+        window.setCloudStatus("Local only (not signed in)", "off");
+      }
+    });
+  }
+</script>
+
+</body>
+</html>
