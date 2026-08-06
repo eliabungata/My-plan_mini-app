@@ -4,78 +4,644 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Plan Board</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root{
     --navy:#1F4E78;
     --navy-dark:#163A5A;
-    --paper:#FBFAF6;
-    --grid:#E4E9EE;
+    --paper:#F7F5EF;
+    --grid:#E9EDF1;
     --amber:#F2A413;
     --amber-dark:#C6870A;
-    --ink:#1B2430;
-    --muted:#6B7684;
-    --line:#C9D2DA;
+    --ink:#20272F;
+    --muted:#65717C;
+    --line:#D3D9E0;
     --danger:#B23A3A;
     --good:#2E7D4F;
+    --sidebar-w:230px;
+    --font-ui:'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --font-head:'Source Serif 4', Georgia, 'Times New Roman', serif;
+    --radius:8px;
+    --shadow-card:0 1px 3px rgba(20,30,45,0.06), 0 1px 2px rgba(20,30,45,0.05);
   }
   *{box-sizing:border-box;}
+  html,body{ height:100%; }
   body{
     margin:0;
-    font-family: 'Courier New', ui-monospace, monospace;
+    font-family: var(--font-ui);
+    font-size:14px;
     background:
-      linear-gradient(var(--grid) 1px, transparent 1px) 0 0/24px 24px,
-      linear-gradient(90deg, var(--grid) 1px, transparent 1px) 0 0/24px 24px,
+      linear-gradient(var(--grid) 1px, transparent 1px) 0 0/28px 28px,
+      linear-gradient(90deg, var(--grid) 1px, transparent 1px) 0 0/28px 28px,
       var(--paper);
     color:var(--ink);
     min-height:100vh;
+    -webkit-font-smoothing:antialiased;
   }
-  .titlebar{
+
+  /* ---------- App shell / sidebar ---------- */
+  .app-shell{
+    display:flex;
+    min-height:100vh;
+  }
+  .menu-toggle{
+    display:none;
+    position:fixed;
+    top:14px; left:14px;
+    z-index:200;
     background:var(--navy);
     color:#fff;
-    padding:18px 28px;
+    border:none;
+    border-radius:6px;
+    width:42px; height:42px;
+    font-size:19px;
+    line-height:1;
+    cursor:pointer;
+    align-items:center;
+    justify-content:center;
+    box-shadow:0 2px 6px rgba(0,0,0,0.25);
+  }
+  .sidebar{
+    width:var(--sidebar-w);
+    flex-shrink:0;
+    background:linear-gradient(180deg, var(--navy) 0%, var(--navy-dark) 100%);
+    color:#EAF1F8;
     display:flex;
-    align-items:baseline;
-    justify-content:space-between;
-    border-bottom:4px solid var(--amber);
+    flex-direction:column;
+    position:fixed;
+    top:0; left:0; bottom:0;
+    z-index:150;
+    overflow-y:auto;
+    border-right:1px solid rgba(0,0,0,0.15);
   }
-  .titlebar h1{
-    font-family: Georgia, 'Times New Roman', serif;
-    font-size:22px;
-    letter-spacing:0.5px;
-    margin:0;
+  .sidebar .brand{
+    font-family:var(--font-head);
+    font-size:19px;
+    font-weight:600;
+    color:#fff;
+    padding:22px 20px 6px 20px;
+    letter-spacing:0.2px;
   }
-  .titlebar .sub{
-    font-size:11px;
-    color:#CFE0EF;
-    letter-spacing:1.5px;
+  .sidebar .brand-sub{
+    font-size:10px;
+    color:#9FBBD4;
+    letter-spacing:1.3px;
     text-transform:uppercase;
+    padding:0 20px 18px 20px;
+    border-bottom:1px solid rgba(255,255,255,0.12);
   }
+  .side-nav{
+    display:flex;
+    flex-direction:column;
+    padding:12px 0;
+    flex:1;
+  }
+  .nav-item{
+    background:none;
+    border:none;
+    border-left:3px solid transparent;
+    text-align:left;
+    color:#A9C1D6;
+    font-family:var(--font-ui);
+    font-size:13.5px;
+    font-weight:500;
+    padding:12px 20px;
+    cursor:pointer;
+    width:100%;
+    transition:background .15s ease, color .15s ease;
+  }
+  .nav-item:hover{ background:rgba(255,255,255,0.06); color:#fff; }
+  .nav-item.active{
+    background:rgba(255,255,255,0.08);
+    color:#fff;
+    border-left:3px solid var(--amber);
+    font-weight:600;
+  }
+  .autosave-badge{
+    display:flex;
+    flex-direction:column;
+    gap:9px;
+    margin:2px 20px 16px 20px;
+    padding:9px 10px;
+    background:rgba(255,255,255,0.07);
+    border:1px solid rgba(255,255,255,0.14);
+    border-radius:6px;
+    font-size:11px;
+    color:#CFE0EE;
+    line-height:1.4;
+  }
+  .autosave-row{
+    display:flex;
+    align-items:center;
+    gap:7px;
+  }
+  .autosave-row-text{ flex:1; min-width:0; }
+  .autosave-row .dot{
+    width:7px; height:7px;
+    border-radius:50%;
+    background:#5BD08A;
+    flex-shrink:0;
+    box-shadow:0 0 0 3px rgba(91,208,138,0.18);
+  }
+  .autosave-row .dot.warn{ background:#E86A6A; box-shadow:0 0 0 3px rgba(232,106,106,0.18); }
+  .autosave-row .dot.off{ background:#7C93A8; box-shadow:0 0 0 3px rgba(124,147,168,0.15); }
+  .autosave-row .label{ font-weight:600; color:#fff; }
+  .autosave-row .detail{ display:block; color:#9FBBD4; font-weight:400; margin-top:1px; }
+
+  .switch{ position:relative; display:inline-block; width:30px; height:17px; flex-shrink:0; }
+  .switch input{ opacity:0; width:0; height:0; position:absolute; }
+  .switch-slider{ position:absolute; inset:0; cursor:pointer; background:rgba(255,255,255,0.22); border-radius:17px; transition:background .15s ease; }
+  .switch-slider::before{ content:""; position:absolute; height:13px; width:13px; left:2px; top:2px; background:#fff; border-radius:50%; transition:transform .15s ease; }
+  .switch input:checked + .switch-slider{ background:#5BD08A; }
+  .switch input:checked + .switch-slider::before{ transform:translateX(13px); }
+  .switch input:focus-visible + .switch-slider{ outline:2px solid #fff; outline-offset:2px; }
+
+  .sidebar-account{
+    padding:14px 18px 20px 18px;
+    border-top:1px solid rgba(255,255,255,0.15);
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+  }
+  .sidebar-account #signInBtn{
+    background:var(--amber);
+    color:#3D2A00;
+    border:none;
+    border-radius:6px;
+    padding:10px 12px;
+    font-size:12.5px;
+    font-weight:600;
+    font-family:var(--font-ui);
+    cursor:pointer;
+    transition:background .15s ease;
+  }
+  .sidebar-account #signInBtn:hover{ background:var(--amber-dark); color:#fff; }
+  #userInfo{
+    display:none;
+    flex-direction:column;
+    gap:8px;
+    font-size:12px;
+  }
+  #userInfo .who{ display:flex; align-items:center; gap:6px; color:#EAF1F8; word-break:break-word; }
+  #userInfo button{
+    background:rgba(255,255,255,0.15);
+    color:#fff;
+    border:none;
+    border-radius:4px;
+    padding:7px 10px;
+    font-size:11px;
+    cursor:pointer;
+    font-family:inherit;
+  }
+  #userInfo button:hover{ background:rgba(255,255,255,0.3); }
+  .cloud-dot{
+    width:8px; height:8px;
+    border-radius:50%;
+    background:#7C93A8;
+    display:inline-block;
+    flex-shrink:0;
+  }
+  .cloud-dot.on{ background:#5BD08A; }
+  .cloud-dot.warn{ background:#E86A6A; }
+
+  /* ---------- Top-right account bar (always visible, even with sidebar closed) ---------- */
+  .top-account-bar{
+    position:fixed;
+    top:14px; right:14px;
+    z-index:190;
+    display:flex;
+    align-items:center;
+  }
+  .top-account-bar #signInBtnTop{
+    background:var(--navy);
+    color:#fff;
+    border:none;
+    border-radius:7px;
+    padding:9px 15px;
+    font-size:12.5px;
+    font-weight:600;
+    font-family:var(--font-ui);
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    gap:7px;
+    box-shadow:0 2px 8px rgba(20,30,45,0.18);
+    transition:background .15s ease;
+  }
+  .top-account-bar #signInBtnTop:hover{ background:var(--navy-dark); }
+  .top-account-bar #signInBtnTop .g-badge{
+    background:#fff;
+    color:var(--navy);
+    border-radius:3px;
+    font-size:11px;
+    font-weight:bold;
+    padding:1px 4px;
+  }
+  #userInfoTop{
+    display:none;
+    align-items:center;
+    gap:8px;
+    background:#fff;
+    border:1px solid var(--line);
+    border-radius:6px;
+    padding:7px 8px 7px 12px;
+    font-size:12px;
+    box-shadow:0 2px 8px rgba(0,0,0,0.14);
+  }
+  #userInfoTop .who{ display:flex; align-items:center; gap:6px; color:var(--ink); }
+  #userInfoTop button{
+    background:var(--paper);
+    color:var(--navy-dark);
+    border:1px solid var(--line);
+    border-radius:4px;
+    padding:6px 9px;
+    font-size:11px;
+    cursor:pointer;
+    font-family:inherit;
+  }
+  #userInfoTop button:hover{ background:var(--navy); color:#fff; }
+  @media (max-width:900px){
+    .top-account-bar{ top:14px; right:14px; left:64px; justify-content:flex-end; }
+  }
+
+  .sidebar-overlay{
+    display:none;
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,0.4);
+    z-index:140;
+  }
+  .sidebar-overlay.show{ display:block; }
+
+  .main-content{
+    margin-left:var(--sidebar-w);
+    flex:1;
+    min-width:0;
+    padding:28px 28px 50px 28px;
+  }
+  .view{ max-width:1000px; }
+
+  /* ---------- Home view ---------- */
+  #view-home{
+    position:relative;
+    min-height:82vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    isolation:isolate;
+    margin:-28px -28px 0 -28px;
+    padding:28px;
+    overflow:hidden;
+    border-radius:0;
+  }
+  .home-bg{
+    position:absolute;
+    inset:0;
+    z-index:-2;
+    background-image:
+      linear-gradient(180deg, rgba(10,18,30,0.35) 0%, rgba(8,15,26,0.55) 55%, rgba(6,12,22,0.82) 100%),
+      url('https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=2400&q=85');
+    background-size:cover;
+    background-position:center 42%;
+    opacity:0;
+    transform:scale(1.06);
+    transition:opacity 1.6s ease;
+    animation:kenBurns 26s ease-in-out infinite alternate;
+    animation-play-state:paused;
+  }
+  .home-bg.show{ opacity:1; animation-play-state:running; }
+  @keyframes kenBurns{
+    from{ transform:scale(1.06); }
+    to{ transform:scale(1.14) translateY(-1.5%); }
+  }
+  .home-bg::after{
+    content:"";
+    position:absolute;
+    inset:0;
+    background:radial-gradient(ellipse at 50% 40%, transparent 35%, rgba(5,10,18,0.5) 100%);
+  }
+  .home-orb{
+    position:absolute;
+    border-radius:50%;
+    filter:blur(80px);
+    opacity:0.28;
+    z-index:-1;
+    pointer-events:none;
+  }
+  .home-orb.o1{ width:360px; height:360px; background:var(--amber); top:6%; left:6%; animation:driftA 19s ease-in-out infinite; }
+  .home-orb.o2{ width:440px; height:440px; background:#2E6BA8; bottom:4%; right:8%; animation:driftB 23s ease-in-out infinite; }
+  .home-orb.o3{ width:240px; height:240px; background:#5BD08A; top:52%; left:66%; opacity:0.18; animation:driftA 27s ease-in-out infinite reverse; }
+  @keyframes driftA{
+    0%,100%{ transform:translate(0,0); }
+    50%{ transform:translate(34px,-42px); }
+  }
+  @keyframes driftB{
+    0%,100%{ transform:translate(0,0); }
+    50%{ transform:translate(-42px,34px); }
+  }
+  @keyframes heroIn{
+    from{ opacity:0; transform:translateY(20px); }
+    to{ opacity:1; transform:translateY(0); }
+  }
+  .home-hero{
+    position:relative;
+    z-index:1;
+    max-width:620px;
+    margin:0 auto;
+    text-align:center;
+    padding:50px 44px;
+    border-radius:16px;
+    background:rgba(13,23,35,0.4);
+    border:1px solid rgba(255,255,255,0.16);
+    box-shadow:0 30px 80px rgba(0,0,0,0.45);
+    backdrop-filter:blur(14px) saturate(160%);
+    -webkit-backdrop-filter:blur(14px) saturate(160%);
+  }
+  .home-eyebrow{
+    font-size:11px;
+    letter-spacing:3.5px;
+    text-transform:uppercase;
+    color:var(--amber);
+    margin:0 0 16px 0;
+    animation:heroIn .8s ease both;
+  }
+  .home-title{
+    font-family:var(--font-head);
+    font-weight:600;
+    font-size:clamp(28px, 4.4vw, 42px);
+    color:#fff;
+    line-height:1.28;
+    margin:0 0 18px 0;
+    text-shadow:0 2px 20px rgba(0,0,0,0.55);
+    animation:heroIn .8s ease .1s both;
+  }
+  .home-sub{
+    color:#DFE8F0;
+    font-family:var(--font-ui);
+    font-size:14.5px;
+    line-height:1.75;
+    margin:0 0 30px 0;
+    text-shadow:0 1px 10px rgba(0,0,0,0.45);
+    animation:heroIn .8s ease .22s both;
+  }
+  .home-cta{
+    font-family:var(--font-ui);
+    font-weight:600;
+    font-size:14px;
+    padding:14px 28px;
+    border-radius:6px;
+    box-shadow:0 8px 24px rgba(242,164,19,0.35);
+    transition:transform .2s ease, box-shadow .2s ease, background .2s ease;
+    animation:heroIn .8s ease .34s both;
+  }
+  .home-cta:hover{
+    transform:translateY(-2px);
+    box-shadow:0 12px 32px rgba(242,164,19,0.5);
+  }
+  .home-foot{
+    margin:18px 0 0 0;
+    font-family:var(--font-ui);
+    font-size:11.5px;
+    color:#B9C8D6;
+    letter-spacing:0.3px;
+    text-shadow:0 1px 8px rgba(0,0,0,0.4);
+    animation:heroIn .8s ease .44s both;
+  }
+
+  /* ---------- New Plan view ---------- */
+  .newplan-form{
+    max-width:460px;
+    margin:0 auto;
+    text-align:left;
+    background:#fff;
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    box-shadow:var(--shadow-card);
+    padding:24px;
+  }
+  .newplan-form label{
+    display:block;
+    font-size:11.5px;
+    font-weight:600;
+    color:var(--muted);
+    text-transform:uppercase;
+    letter-spacing:0.6px;
+    margin-bottom:7px;
+  }
+  .newplan-input{
+    width:100%;
+    padding:11px 12px;
+    border:1.5px solid var(--line);
+    border-radius:6px;
+    background:#fff;
+    font-family:var(--font-ui);
+    font-size:14px;
+    color:var(--ink);
+    margin-bottom:18px;
+    transition:border-color .15s ease, box-shadow .15s ease;
+  }
+  .newplan-input:focus{ outline:none; border-color:var(--navy); box-shadow:0 0 0 3px rgba(31,78,120,0.12); }
+  .newplan-actions{
+    display:flex;
+    justify-content:flex-end;
+  }
+
+  /* ---------- Settings view ---------- */
+  .view-title{
+    font-family:var(--font-head);
+    font-weight:600;
+    color:var(--navy-dark);
+    font-size:20px;
+    margin:0 0 6px 0;
+    border-left:3px solid var(--amber);
+    padding-left:12px;
+  }
+  .view-desc{
+    color:var(--muted);
+    font-size:13px;
+    margin:0 0 18px 0;
+    padding-left:15px;
+  }
+  .settings-subheading{
+    font-family:var(--font-head);
+    font-size:15px;
+    font-weight:600;
+    color:var(--navy-dark);
+    margin:0 0 10px 0;
+  }
+  .settings-toggle-row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:16px;
+    cursor:default;
+  }
+  .settings-toggle-text{ display:flex; flex-direction:column; gap:4px; max-width:360px; }
+  .settings-toggle-title{ font-weight:600; color:var(--ink); font-size:13.5px; }
+  .settings-toggle-desc{ color:var(--muted); font-size:12px; line-height:1.5; }
+  .switch-light .switch-slider{ background:#D3D9E0; }
+  .switch-light input:checked + .switch-slider{ background:var(--good); }
+  .switch-light .switch-slider::before{ background:#fff; }
+
+  .settings-card{
+    max-width:460px;
+    background:#fff;
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    box-shadow:var(--shadow-card);
+    padding:22px;
+  }
+  .radio-row{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    font-size:13.5px;
+    padding:10px 2px;
+    cursor:pointer;
+    border-radius:6px;
+    transition:background .15s ease;
+  }
+  .radio-row:hover{ background:var(--paper); }
+  .radio-row input{ flex-shrink:0; accent-color:var(--navy); width:15px; height:15px; }
+  .settings-subfield{ padding:2px 0 12px 29px; }
+  .settings-subfield input{
+    width:100%;
+    padding:10px 12px;
+    border:1.5px solid var(--line);
+    border-radius:6px;
+    font-family:var(--font-ui);
+    font-size:13.5px;
+    background:#fff;
+    transition:border-color .15s ease, box-shadow .15s ease;
+  }
+  .settings-subfield input:focus{ outline:none; border-color:var(--navy); box-shadow:0 0 0 3px rgba(31,78,120,0.12); }
+  .settings-note{
+    margin:18px 0 0 0;
+    font-size:11.5px;
+    color:var(--muted);
+    font-style:italic;
+    line-height:1.6;
+  }
+  #settingsStatus{ margin-left:10px; }
+
+  /* ---------- My Plans toolbar ---------- */
+  .myplans-toolbar{
+    display:flex;
+    gap:10px;
+    align-items:center;
+    flex-wrap:wrap;
+    margin-bottom:16px;
+  }
+  .toolbar-btn{
+    background:#fff;
+    border:1.5px solid var(--line);
+    color:var(--navy-dark);
+    padding:8px 15px;
+    border-radius:6px;
+    font-size:12.5px;
+    font-weight:500;
+    cursor:pointer;
+    font-family:var(--font-ui);
+    transition:background .15s ease, border-color .15s ease;
+  }
+  .toolbar-btn:hover{ background:var(--navy); border-color:var(--navy); color:#fff; }
+  .toolbar-btn.primary{
+    background:var(--amber);
+    border-color:var(--amber-dark);
+    color:#3D2A00;
+    font-weight:600;
+  }
+  .toolbar-btn.primary:hover{ background:var(--amber-dark); color:#fff; }
+  #importFile{ display:none; }
+
+  .toolbar-dropdown{ position:relative; display:inline-block; }
+  .toolbar-menu{
+    display:none;
+    position:absolute;
+    top:calc(100% + 6px);
+    left:0;
+    background:#fff;
+    border:1px solid var(--line);
+    border-radius:8px;
+    box-shadow:var(--shadow-card);
+    min-width:210px;
+    padding:6px;
+    z-index:60;
+    flex-direction:column;
+  }
+  .toolbar-menu.show{ display:flex; }
+  .toolbar-menu button{
+    background:none;
+    border:none;
+    text-align:left;
+    padding:9px 10px;
+    border-radius:5px;
+    font-size:12.5px;
+    color:var(--ink);
+    cursor:pointer;
+    font-family:var(--font-ui);
+    width:100%;
+  }
+  .toolbar-menu button:hover{ background:var(--paper); }
+  .toolbar-menu-sep{ height:1px; background:var(--line); margin:5px 4px; }
+
+  .save-status{
+    font-size:11.5px;
+    color:var(--muted);
+    align-self:center;
+    font-style:italic;
+  }
+  .save-status.warn{ color:var(--danger); font-weight:600; font-style:normal; }
+  .save-status.good{ color:var(--good); }
+  .autosave-note{
+    margin:6px 2px 16px 2px;
+    font-size:12px;
+    color:var(--muted);
+    display:flex;
+    align-items:center;
+    gap:6px;
+  }
+  .autosave-note::before{
+    content:"";
+    width:7px; height:7px;
+    border-radius:50%;
+    background:var(--good);
+    display:inline-block;
+    flex-shrink:0;
+  }
+
+  /* ---------- Tabs ---------- */
   .tabs{
     display:flex;
     gap:6px;
-    padding:14px 24px 0 24px;
     flex-wrap:wrap;
     align-items:flex-end;
+    margin-bottom:0;
   }
   .tab{
-    background:#EEF2F5;
+    background:#EDF1F5;
     border:1px solid var(--line);
     border-bottom:none;
     padding:9px 14px;
     font-size:13px;
+    font-weight:500;
     cursor:pointer;
-    border-radius:6px 6px 0 0;
+    border-radius:8px 8px 0 0;
     color:var(--muted);
     position:relative;
     max-width:220px;
     white-space:nowrap;
     overflow:hidden;
     text-overflow:ellipsis;
+    transition:background .15s ease;
   }
+  .tab:hover{ background:#E4EAF0; }
   .tab.active{
     background:var(--paper);
     color:var(--navy-dark);
-    font-weight:bold;
+    font-weight:600;
     border-color:var(--navy);
     border-bottom:2px solid var(--paper);
     margin-bottom:-1px;
@@ -94,210 +660,308 @@
   .tab .edit-icon:hover{opacity:1;}
   .newplan-btn{
     background:var(--amber);
-    color:#332200;
+    color:#3D2A00;
     border:1px solid var(--amber-dark);
-    border-radius:6px 6px 0 0;
+    border-radius:8px 8px 0 0;
     padding:9px 14px;
     font-size:13px;
-    font-weight:bold;
+    font-weight:600;
     cursor:pointer;
+    transition:background .15s ease;
   }
   .newplan-btn:hover{background:var(--amber-dark); color:#fff;}
 
+  /* ---------- Board ---------- */
   .board{
-    border:1px solid var(--navy);
-    background:var(--paper);
-    margin:0 24px 40px 24px;
+    border:1px solid var(--line);
+    border-top:1px solid var(--navy);
+    background:#fff;
+    box-shadow:var(--shadow-card);
+    margin:0 0 40px 0;
     padding:0;
+    border-radius:0 8px 8px 8px;
+    overflow:hidden;
   }
   .plan-title-row{
     display:flex;
     align-items:center;
     gap:10px;
-    padding:14px 20px;
-    background:var(--navy);
+    padding:16px 22px;
+    background:linear-gradient(180deg, var(--navy) 0%, var(--navy-dark) 100%);
   }
   .plan-title-row input{
     flex:1;
     background:transparent;
     border:none;
-    border-bottom:1px dashed #7FA1BF;
+    border-bottom:1px dashed rgba(255,255,255,0.35);
     color:#fff;
-    font-family:Georgia, serif;
+    font-family:var(--font-head);
+    font-weight:600;
     font-size:18px;
     padding:4px 2px;
   }
   .plan-title-row input:focus{outline:none; border-bottom:1px solid var(--amber);}
 
   .section{
-    padding:16px 20px;
-    border-bottom:1px solid var(--grid);
+    padding:18px 22px;
+    border-bottom:1px solid var(--line);
   }
+  .section:last-child{ border-bottom:none; }
   .section-head{
     display:flex;
     align-items:center;
     justify-content:space-between;
-    margin-bottom:10px;
+    margin-bottom:12px;
   }
   .section-head h2{
-    font-family:Georgia, serif;
+    font-family:var(--font-head);
+    font-weight:600;
     font-size:14px;
-    letter-spacing:1px;
+    letter-spacing:0.4px;
     text-transform:uppercase;
     color:var(--navy-dark);
     margin:0;
-    border-left:4px solid var(--amber);
-    padding-left:8px;
+    border-left:3px solid var(--amber);
+    padding-left:10px;
   }
   .add-btn{
     background:var(--navy);
     color:#fff;
     border:none;
-    border-radius:4px;
-    padding:5px 10px;
+    border-radius:6px;
+    padding:6px 12px;
     font-size:12px;
+    font-weight:500;
     cursor:pointer;
-    font-family:inherit;
+    font-family:var(--font-ui);
+    transition:background .15s ease;
   }
   .add-btn:hover{background:var(--navy-dark);}
-  .add-btn.amber{background:var(--amber); color:#332200; font-weight:bold;}
+  .add-btn.amber{background:var(--amber); color:#3D2A00; font-weight:600;}
   .add-btn.amber:hover{background:var(--amber-dark); color:#fff;}
 
   .list-row{
     display:flex;
     gap:8px;
     align-items:flex-start;
-    margin-bottom:8px;
+    margin-bottom:10px;
   }
   .list-row textarea{
     flex:1;
     resize:vertical;
-    min-height:38px;
-    font-family:inherit;
-    font-size:13px;
-    padding:8px;
-    border:1px solid var(--line);
+    min-height:42px;
+    font-family:var(--font-ui);
+    font-size:13.5px;
+    line-height:1.55;
+    padding:10px 12px;
+    border:1.5px solid var(--line);
+    border-radius:6px;
     background:#fff;
     color:var(--ink);
+    transition:border-color .15s ease, box-shadow .15s ease;
   }
-  .list-row textarea:focus{outline:1px solid var(--navy);}
+  .list-row textarea:focus{outline:none; border-color:var(--navy); box-shadow:0 0 0 3px rgba(31,78,120,0.12);}
+  .list-row textarea::placeholder{ color:var(--muted); opacity:0.75; }
   .row-remove{
-    background:none;
-    border:1px solid var(--line);
+    background:#fff;
+    border:1.5px solid var(--line);
     color:var(--danger);
-    border-radius:4px;
-    width:28px;
-    height:28px;
+    border-radius:6px;
+    width:30px;
+    height:30px;
     cursor:pointer;
     flex-shrink:0;
+    font-size:15px;
+    transition:background .15s ease, border-color .15s ease;
   }
-  .row-remove:hover{background:var(--danger); color:#fff;}
+  .row-remove:hover{background:var(--danger); border-color:var(--danger); color:#fff;}
 
   table{
     width:100%;
-    border-collapse:collapse;
-    font-size:12px;
+    border-collapse:separate;
+    border-spacing:0;
+    font-size:12.5px;
+    border:1px solid var(--line);
+    border-radius:6px;
+    overflow:hidden;
   }
   thead th{
     background:var(--navy);
     color:#fff;
     text-align:left;
-    padding:8px 6px;
-    font-weight:bold;
+    padding:9px 10px;
+    font-weight:600;
+    font-size:11.5px;
+    text-transform:uppercase;
     letter-spacing:0.3px;
+    border-right:1px solid rgba(255,255,255,0.15);
   }
+  thead th:last-child{ border-right:none; }
   tbody td{
-    border:1px solid var(--grid);
+    border-bottom:1px solid var(--line);
+    border-right:1px solid var(--line);
     padding:2px;
     vertical-align:top;
+    background:#fff;
   }
+  tbody tr:last-child td{ border-bottom:none; }
+  tbody td:last-child{ border-right:none; }
   tbody input, tbody textarea{
     width:100%;
     border:none;
     background:transparent;
-    font-family:inherit;
-    font-size:12px;
-    padding:6px;
+    font-family:var(--font-ui);
+    font-size:12.5px;
+    padding:8px;
+    color:var(--ink);
+    border-radius:4px;
+  }
+  tbody input:focus, tbody textarea:focus{outline:none; background:#EEF4FA; box-shadow:inset 0 0 0 1.5px var(--navy);}
+  tbody input::placeholder, tbody textarea::placeholder{ color:var(--muted); opacity:0.7; }
+  tbody tr:nth-child(even) td{background:#F7F9FB;}
+  tbody input[type="date"], tbody input[type="time"]{
+    cursor:pointer;
     color:var(--ink);
   }
-  tbody input:focus, tbody textarea:focus{outline:1px solid var(--navy); background:#fff;}
-  tbody tr:nth-child(even){background:#F5F7F9;}
-  .col-remove{width:32px; text-align:center;}
-
-  .navbar{
+  .range-cell{
     display:flex;
-    gap:10px;
+    flex-direction:column;
+    gap:4px;
+    padding:6px;
+    min-width:168px;
+  }
+  .pill-field{ position:relative; }
+  .pill-btn{
+    display:flex;
     align-items:center;
-    padding:12px 24px;
-    flex-wrap:wrap;
-    background:#EAEFF3;
-    border-bottom:1px solid var(--line);
-    position:sticky;
-    top:0;
-    z-index:10;
-  }
-  .navbar button{
-    background:#fff;
-    border:1px solid var(--navy);
-    color:var(--navy-dark);
-    padding:8px 14px;
-    border-radius:4px;
+    gap:6px;
+    width:100%;
+    background:#F3F6F9;
+    border:1.5px solid var(--line);
+    border-radius:6px;
+    padding:7px 9px;
+    font-family:var(--font-ui);
     font-size:12px;
-    cursor:pointer;
-    font-family:inherit;
-  }
-  .navbar button:hover{background:var(--navy); color:#fff;}
-  .navbar input[type=file]{display:none;}
-  .navbar .save-btn{
-    background:var(--amber);
-    border-color:var(--amber-dark);
-    color:#332200;
-    font-weight:bold;
-  }
-  .navbar .save-btn:hover{background:var(--amber-dark); color:#fff;}
-  .save-status{
-    font-size:11px;
     color:var(--muted);
-    align-self:center;
-    font-style:italic;
+    cursor:pointer;
+    transition:border-color .15s ease, background .15s ease, color .15s ease;
   }
-  .save-status.warn{ color:var(--danger); font-weight:bold; font-style:normal; }
-  .save-status.good{ color:var(--good); }
-
-  .auth-box{
+  .pill-btn:hover{ border-color:var(--navy); background:#fff; }
+  .pill-btn.has-value{ color:var(--ink); font-weight:500; background:#fff; }
+  .pill-icon{ display:flex; align-items:center; color:var(--navy); flex-shrink:0; }
+  .pill-text{
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+  .pill-input{
+    width:100%;
+    padding:6px 8px;
+    border:1.5px solid var(--navy);
+    border-radius:6px;
+    font-family:var(--font-ui);
+    font-size:12px;
+    background:#fff;
+    box-shadow:0 0 0 3px rgba(31,78,120,0.12);
+  }
+  .pill-input:focus{ outline:none; }
+  .time-edit-row{
     display:flex;
     align-items:center;
-    gap:8px;
-    margin-left:auto;
-    padding-left:14px;
-    border-left:1px solid var(--line);
+    gap:5px;
+    border:1.5px solid var(--navy);
+    border-radius:6px;
+    padding:5px 6px;
+    background:#fff;
+    box-shadow:0 0 0 3px rgba(31,78,120,0.12);
   }
-  .auth-box button{
-    background:var(--navy);
+  .time-select{
+    flex:1;
+    min-width:0;
+    border:1.5px solid var(--line);
+    border-radius:5px;
+    padding:6px 4px;
+    font-family:var(--font-ui);
+    font-size:12.5px;
+    background:#fff;
+    color:var(--ink);
+    cursor:pointer;
+  }
+  .time-select:focus{ outline:none; border-color:var(--navy); }
+  .time-sep{ font-weight:700; color:var(--muted); flex-shrink:0; }
+  .time-done-btn{
+    background:var(--good);
     color:#fff;
-    border-color:var(--navy);
+    border:none;
+    border-radius:5px;
+    width:26px;
+    height:26px;
+    flex-shrink:0;
+    cursor:pointer;
+    font-size:13px;
+    line-height:1;
+    transition:opacity .15s ease;
   }
-  .auth-box button:hover{background:var(--navy-dark);}
-  #userInfo{
-    display:none;
+  .time-done-btn:hover{ opacity:0.85; }
+  .date-edit-row{
+    display:flex;
     align-items:center;
-    gap:8px;
+    gap:4px;
+    border:1.5px solid var(--navy);
+    border-radius:6px;
+    padding:5px 6px;
+    background:#fff;
+    box-shadow:0 0 0 3px rgba(31,78,120,0.12);
+    flex-wrap:wrap;
+  }
+  .date-select{
+    min-width:0;
+    border:1.5px solid var(--line);
+    border-radius:5px;
+    padding:6px 3px;
+    font-family:var(--font-ui);
+    font-size:11.5px;
+    background:#fff;
+    color:var(--ink);
+    cursor:pointer;
+  }
+  .date-select:focus{ outline:none; border-color:var(--navy); }
+  .date-select-month{ flex:1.4; }
+  .date-select-day{ flex:0.8; }
+  .date-select-year{ flex:1.1; }
+  .status-cell{
+    padding:8px;
+    min-width:132px;
+  }
+  .status-pill{ justify-content:flex-start; }
+  .status-pill.status-not-started{ color:var(--muted); }
+  .status-pill.status-in-progress{ color:var(--amber-dark); }
+  .status-pill.status-finished{ color:var(--good); }
+  .status-options{
+    display:flex;
+    flex-direction:column;
+    gap:7px;
+  }
+  .status-opt{
+    display:flex;
+    align-items:center;
+    gap:7px;
     font-size:12px;
+    color:var(--ink);
+    cursor:pointer;
   }
-  #userEmail{
-    color:var(--navy-dark);
-    font-weight:bold;
+  .status-opt input[type="checkbox"]{
+    width:15px;
+    height:15px;
+    flex-shrink:0;
+    accent-color:var(--good);
+    cursor:pointer;
   }
-  .cloud-dot{
-    width:8px;
-    height:8px;
-    border-radius:50%;
-    background:var(--muted);
-    display:inline-block;
-    margin-right:4px;
+  .status-opt:has(input:checked){
+    font-weight:600;
+    color:var(--good);
   }
-  .cloud-dot.on{background:var(--good);}
-  .cloud-dot.warn{background:var(--danger);}
+  .col-remove{width:34px; text-align:center;}
 
   .empty-hint{
     font-size:12px;
@@ -307,53 +971,198 @@
   }
 
   @media print{
-    .tabs, .newplan-btn, .navbar, .add-btn, .row-remove, .col-remove{display:none !important;}
+    .sidebar, .menu-toggle, .sidebar-overlay, .newplan-btn, .myplans-toolbar, .add-btn, .row-remove, .col-remove{display:none !important;}
+    .main-content{ margin-left:0; }
     body{background:#fff;}
     .board{border:none; margin:0;}
   }
 
+  /* ---------- Responsive: tablet & phone ---------- */
+  @media (max-width:900px){
+    .menu-toggle{ display:flex; }
+    .sidebar{
+      width:250px;
+      transform:translateX(-100%);
+      transition:transform .25s ease;
+    }
+    .sidebar.open{ transform:translateX(0); box-shadow:4px 0 14px rgba(0,0,0,0.3); }
+    .main-content{
+      margin-left:0;
+      padding:76px 16px 40px 16px;
+    }
+    #view-home{ margin:-76px -16px 0 -16px; padding:76px 16px 40px 16px; }
+  }
+
   @media (max-width:700px){
-    .titlebar{flex-direction:column; align-items:flex-start; gap:4px;}
-    .board{margin:0 10px 30px 10px;}
-    .navbar{position:static;}
-    .auth-box{margin-left:0; padding-left:0; border-left:none; width:100%; border-top:1px solid var(--line); padding-top:8px;}
     table, thead, tbody, th, td, tr{display:block;}
     thead{display:none;}
     tbody tr{margin-bottom:10px; border:1px solid var(--line);}
     tbody td{display:flex; align-items:center; gap:6px;}
     tbody td::before{content: attr(data-label); font-weight:bold; font-size:11px; color:var(--muted); width:90px; flex-shrink:0;}
+    .home-hero{ padding:38px 24px; }
   }
 </style>
 </head>
 <body>
 
-<div class="titlebar">
-  <div>
-    <h1>Plan Board</h1>
-    <div class="sub">Vision &middot; Motive &middot; Actions &middot; Adjustments</div>
+<button class="menu-toggle" id="menuToggle" onclick="toggleSidebar()" aria-label="Open menu">&#9776;</button>
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebarMobile()"></div>
+
+<div class="top-account-bar">
+  <button id="signInBtnTop" onclick="signIn()"><span class="g-badge">G</span><span class="full-label">Sign in</span></button>
+  <div id="userInfoTop">
+    <div class="who"><span class="cloud-dot" id="cloudDotTop"></span><span id="userEmailTop"></span></div>
+    <button onclick="signOutUser()">Sign out</button>
   </div>
 </div>
 
-<nav class="navbar">
-  <button id="saveBtn" class="save-btn" onclick="manualSave()">✓ Save Plan</button>
-  <button onclick="exportPlans()">Export all plans (.json)</button>
-  <button onclick="document.getElementById('importFile').click()">Import plans (.json)</button>
-  <input type="file" id="importFile" accept="application/json" onchange="importPlans(event)">
-  <button onclick="printBoard()">Print / Save as PDF</button>
-  <span id="saveStatus" class="save-status"></span>
+<div class="app-shell">
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">Plan Board</div>
+    <div class="brand-sub">Vision &middot; Motive &middot; Actions</div>
 
-  <span class="auth-box">
-    <button id="signInBtn" onclick="signIn()">Sign in with Google</button>
-    <span id="userInfo">
-      <span class="cloud-dot" id="cloudDot"></span>
-      <span id="userEmail"></span>
-      <button onclick="signOutUser()">Sign out</button>
-    </span>
-  </span>
-</nav>
+    <nav class="side-nav">
+      <button class="nav-item" data-view="home" onclick="handleNav('home')">Home</button>
+      <button class="nav-item" data-view="newplan" onclick="handleNav('newplan')">New Plan</button>
+      <button class="nav-item" data-view="myplans" onclick="handleNav('myplans')">My Plans</button>
+      <button class="nav-item" data-view="settings" onclick="handleNav('settings')">Settings</button>
+    </nav>
 
-<div class="tabs" id="tabs"></div>
-<div class="board" id="board"></div>
+    <div class="autosave-badge" id="autosaveBadge">
+      <div class="autosave-row" title="Every change saves to this browser automatically — no need to click Save. Manage this in Settings.">
+        <span class="dot" id="localSaveDot"></span>
+        <span class="autosave-row-text">
+          <span class="label" id="localSaveLabel">Autosave is on</span>
+          <span class="detail" id="localSaveDetail">Changes save automatically</span>
+        </span>
+      </div>
+      <div class="autosave-row" title="When you're signed in, changes also sync to your account so they follow you across devices.">
+        <span class="dot off" id="cloudSaveDot"></span>
+        <span class="autosave-row-text">
+          <span class="label">Your account</span>
+          <span class="detail" id="cloudSaveDetail">Not signed in</span>
+        </span>
+      </div>
+    </div>
+
+    <div class="sidebar-account">
+      <button id="signInBtn" onclick="signIn()">Sign in</button>
+      <div id="userInfo">
+        <div class="who"><span class="cloud-dot" id="cloudDot"></span><span id="userEmail"></span></div>
+        <button onclick="signOutUser()">Sign out</button>
+      </div>
+    </div>
+  </aside>
+
+  <main class="main-content">
+
+    <!-- HOME -->
+    <div id="view-home" class="view">
+      <div class="home-bg" id="homeBg"></div>
+      <div class="home-orb o1"></div>
+      <div class="home-orb o2"></div>
+      <div class="home-orb o3"></div>
+      <div class="home-hero">
+        <p class="home-eyebrow">Vision &middot; Motive &middot; Action &middot; Adjustment</p>
+        <h1 class="home-title">Turn your vision<br>into motion.</h1>
+        <p class="home-sub">Every summit starts as a plan on paper. Write down what you're building, why it has to happen, and the exact steps that get you there &mdash; then track every course correction along the way.</p>
+        <button class="add-btn amber home-cta" onclick="handleNav('newplan')">+ Start Your First Plan</button>
+        <p class="home-foot">Free to use &middot; works offline &middot; sync to the cloud whenever you're ready</p>
+      </div>
+    </div>
+
+    <!-- NEW PLAN (its own page — creating a plan does not jump straight into My Plans) -->
+    <div id="view-newplan" class="view" style="display:none">
+      <div class="home-hero" style="background:#fff; border:1px solid var(--line); box-shadow:var(--shadow-card); backdrop-filter:none; color:var(--ink);">
+        <h1 class="home-title" style="color:var(--navy-dark); text-shadow:none;">Start a new plan</h1>
+        <p class="home-sub" style="color:var(--muted); text-shadow:none;">Give it a name, then build out its vision, motives, actions, and adjustments from the board.</p>
+        <div class="newplan-form">
+          <label for="newPlanTitleInput">Plan Name</label>
+          <input type="text" id="newPlanTitleInput" class="newplan-input" placeholder="e.g. Final Year Project" onkeydown="if(event.key==='Enter'){createPlanFromForm();}">
+          <div class="newplan-actions">
+            <button class="add-btn amber" onclick="createPlanFromForm()">+ Create Plan</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MY PLANS -->
+    <div id="view-myplans" class="view" style="display:none">
+      <div class="myplans-toolbar">
+        <button id="saveBtn" class="toolbar-btn primary" onclick="manualSave()" title="Your work already autosaves as you type — this just saves a checkpoint right now.">Save</button>
+
+        <div class="toolbar-dropdown" id="fileMenuWrap">
+          <button class="toolbar-btn" id="fileMenuBtn" onclick="toggleFileMenu(event)" aria-haspopup="true" aria-expanded="false">File &#9662;</button>
+          <div class="toolbar-menu" id="fileMenu">
+            <button onclick="exportPlans(); closeFileMenu();">&#11015; Export all plans (.json)</button>
+            <button onclick="document.getElementById('importFile').click(); closeFileMenu();">&#11014; Import plans (.json)</button>
+            <div class="toolbar-menu-sep"></div>
+            <button onclick="printBoard(); closeFileMenu();">🖨 Print / Save as PDF</button>
+          </div>
+        </div>
+        <input type="file" id="importFile" accept="application/json" onchange="importPlans(event)">
+
+        <span id="saveStatus" class="save-status"></span>
+      </div>
+      <div class="tabs" id="tabs"></div>
+      <div class="board" id="board"></div>
+    </div>
+
+    <!-- SETTINGS -->
+    <div id="view-settings" class="view" style="display:none">
+      <h2 class="view-title">Settings</h2>
+      <p class="view-desc">Manage how your plans are saved, and how you'd like to be alerted about plan timelines.</p>
+
+      <h3 class="settings-subheading">Autosave</h3>
+      <div class="settings-card" style="margin-bottom:22px;">
+        <label class="settings-toggle-row">
+          <span class="settings-toggle-text">
+            <span class="settings-toggle-title">Autosave to this device</span>
+            <span class="settings-toggle-desc">Automatically saves your changes to this browser as you type. Turn it off and you'll need to click Save to keep your work.</span>
+          </span>
+          <span class="switch switch-light" title="Turn autosave to this device on or off">
+            <input type="checkbox" id="autosaveToggle" checked onchange="setAutosaveEnabled(this.checked)">
+            <span class="switch-slider"></span>
+          </span>
+        </label>
+      </div>
+
+      <h3 class="settings-subheading">Alerts</h3>
+      <div style="max-width:460px; background:#FDF6E5; border:1px solid var(--amber-dark); border-left:3px solid var(--amber-dark); border-radius:6px; padding:13px 16px; margin-bottom:18px; font-size:12.5px; color:#5C4200; display:flex; gap:9px; align-items:flex-start; line-height:1.5;">
+        <span style="font-weight:600;">&#9888;</span>
+        <span>This section is still under development. You can save a preference below, but alerts aren't wired up to actually send yet.</span>
+      </div>
+      <div class="settings-card">
+        <label class="radio-row">
+          <input type="radio" name="alertMethod" value="none" id="alertNone" onchange="toggleSettingsFields(); autosaveSettings();">
+          <span>Don't alert me</span>
+        </label>
+
+        <label class="radio-row">
+          <input type="radio" name="alertMethod" value="email" id="alertEmail" onchange="toggleSettingsFields(); autosaveSettings();">
+          <span>Alert me by email</span>
+        </label>
+        <div class="settings-subfield" id="emailField" style="display:none">
+          <input type="email" id="alertEmailInput" placeholder="you@example.com" oninput="autosaveSettings()">
+        </div>
+
+        <label class="radio-row">
+          <input type="radio" name="alertMethod" value="mobile" id="alertMobile" onchange="toggleSettingsFields(); autosaveSettings();">
+          <span>Alert me on mobile</span>
+        </label>
+        <div class="settings-subfield" id="mobileField" style="display:none">
+          <input type="tel" id="alertMobileInput" placeholder="+255 ..." oninput="autosaveSettings()">
+        </div>
+
+        <button id="saveSettingsBtn" class="add-btn amber" onclick="manualSaveSettings()" style="margin-top:12px;" title="Your preference already autosaves — this just saves a checkpoint right now.">Save</button>
+        <span id="settingsStatus" class="save-status"></span>
+
+        <p class="settings-note">Autosave is on — your alert preference saves automatically. Actually sending alerts on your timelines isn't wired up yet — it needs a small scheduled job to be added separately.</p>
+      </div>
+    </div>
+
+  </main>
+</div>
 
 <script>
 function uid(){ return 'p' + Math.random().toString(36).slice(2,9); }
@@ -376,15 +1185,38 @@ function newPlan(title){
 
 let plans = [ newPlan("Plan 1") ];
 let activeIndex = 0;
+let settings = { alertMethod: "none", email: "", mobile: "" };
 
 // ---------- Local persistence (always on, works with or without sign-in) ----------
 const STORAGE_KEY = "planBoardData";
+const AUTOSAVE_PREF_KEY = "planBoardAutosavePref";
 let storageAvailable = true;
 let lastSavedAt = null;
+let hasUnsavedChanges = false;
 
-function saveToStorage(){
+// The autosave on/off preference is written immediately and independently of
+// autosave itself, so switching autosave off doesn't stop that preference
+// from being remembered next time.
+let autosaveEnabled = true;
+try{
+  const storedPref = localStorage.getItem(AUTOSAVE_PREF_KEY);
+  if(storedPref !== null) autosaveEnabled = storedPref === "true";
+}catch(e){ /* keep default */ }
+
+function setAutosaveEnabled(on){
+  autosaveEnabled = on;
+  try{ localStorage.setItem(AUTOSAVE_PREF_KEY, String(on)); }catch(e){}
+  if(on && hasUnsavedChanges){
+    doSave();
+    hasUnsavedChanges = false;
+  }
+  updateSaveStatus();
+}
+window.setAutosaveEnabled = setAutosaveEnabled;
+
+function doSave(){
   try{
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({plans, activeIndex}));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({plans, activeIndex, settings}));
     storageAvailable = true;
     lastSavedAt = new Date();
   }catch(e){
@@ -394,19 +1226,64 @@ function saveToStorage(){
   // Also push to the cloud if the user is signed in (debounced, defined in the Firebase module below)
   if(window.queueCloudSave) window.queueCloudSave();
 }
+
+function saveToStorage(){
+  if(autosaveEnabled){
+    doSave();
+  } else {
+    hasUnsavedChanges = true;
+    updateSaveStatus();
+  }
+}
 function updateSaveStatus(){
   const el = document.getElementById('saveStatus');
-  if(!el) return;
-  if(!storageAvailable){
-    el.textContent = "Local autosave unavailable — use Export to keep your work.";
-    el.className = "save-status warn";
-  } else if(lastSavedAt){
-    el.textContent = "Saved locally " + lastSavedAt.toLocaleTimeString();
-    el.className = "save-status";
+  const settingsEl = document.getElementById('settingsStatus');
+  [el, settingsEl].forEach(target => {
+    if(!target) return;
+    if(!storageAvailable){
+      target.textContent = "Autosave unavailable — use Export to keep your work.";
+      target.className = "save-status warn";
+    } else if(!autosaveEnabled){
+      target.textContent = hasUnsavedChanges
+        ? "Autosave is off — unsaved changes, click Save"
+        : "Autosave is off" + (lastSavedAt ? " \u2013 last saved " + lastSavedAt.toLocaleTimeString() : "");
+      target.className = hasUnsavedChanges ? "save-status warn" : "save-status";
+    } else if(lastSavedAt){
+      target.textContent = "\u2713 Autosaved " + lastSavedAt.toLocaleTimeString();
+      target.className = "save-status";
+    }
+  });
+
+  // Keep the always-visible sidebar "This device" row in sync, so it's
+  // clear from anywhere in the app whether autosave is on and working.
+  const dot = document.getElementById('localSaveDot');
+  const label = document.getElementById('localSaveLabel');
+  const detail = document.getElementById('localSaveDetail');
+  const toggle = document.getElementById('autosaveToggle');
+  if(toggle && toggle.checked !== autosaveEnabled) toggle.checked = autosaveEnabled;
+  if(dot && label && detail){
+    if(!storageAvailable){
+      dot.className = "dot warn";
+      label.textContent = "Autosave failed";
+      detail.textContent = "Can't save locally — use Export to keep your work";
+    } else if(!autosaveEnabled){
+      dot.className = "dot off";
+      label.textContent = "Autosave is off";
+      detail.textContent = hasUnsavedChanges
+        ? "Unsaved changes — click Save"
+        : (lastSavedAt ? "Last saved " + lastSavedAt.toLocaleTimeString() : "Turn on to save automatically");
+    } else {
+      dot.className = "dot";
+      label.textContent = "Autosave is on";
+      detail.textContent = lastSavedAt
+        ? "Last saved " + lastSavedAt.toLocaleTimeString()
+        : "Changes save to this device as you type";
+    }
   }
 }
 function manualSave(){
-  saveToStorage();
+  doSave();
+  hasUnsavedChanges = false;
   const btn = document.getElementById('saveBtn');
   if(!btn) return;
   const original = btn.textContent;
@@ -421,12 +1298,102 @@ function loadFromStorage(){
     if(!parsed || !Array.isArray(parsed.plans) || parsed.plans.length===0) return false;
     plans = parsed.plans;
     activeIndex = Math.min(parsed.activeIndex || 0, plans.length - 1);
+    if(parsed.settings) settings = Object.assign(settings, parsed.settings);
     return true;
   }catch(e){ return false; }
 }
 loadFromStorage();
 
 function activePlan(){ return plans[activeIndex]; }
+
+// ---------- View / navigation ----------
+let currentView = 'home';
+function showView(view){
+  currentView = view;
+  document.querySelectorAll('.view').forEach(v => v.style.display = 'none');
+  const el = document.getElementById('view-' + view);
+  if(el) el.style.display = 'block';
+  document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+  const navBtn = document.querySelector('.nav-item[data-view="' + view + '"]');
+  if(navBtn) navBtn.classList.add('active');
+  closeSidebarMobile();
+  window.scrollTo(0,0);
+  if(view === 'home'){
+    const bg = document.getElementById('homeBg');
+    if(bg) requestAnimationFrame(() => requestAnimationFrame(() => bg.classList.add('show')));
+  }
+}
+function handleNav(view){
+  if(view === 'newplan'){
+    const input = document.getElementById('newPlanTitleInput');
+    if(input){ input.value = ""; }
+    showView('newplan');
+    if(input) setTimeout(() => input.focus(), 0);
+    return;
+  }
+  if(view === 'myplans'){ renderTabs(); renderBoard(); }
+  if(view === 'settings'){ renderSettings(); }
+  showView(view);
+}
+
+// Creates a plan from the dedicated New Plan page, then hands off to My Plans
+function createPlanFromForm(){
+  const input = document.getElementById('newPlanTitleInput');
+  const typed = input ? input.value.trim() : "";
+  plans.push(newPlan(typed || ("Plan " + (plans.length + 1))));
+  activeIndex = plans.length - 1;
+  if(input) input.value = "";
+  render();
+  showView('myplans');
+}
+
+function toggleSidebar(){
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('sidebarOverlay').classList.toggle('show');
+}
+function closeSidebarMobile(){
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sidebarOverlay').classList.remove('show');
+}
+
+// ---------- Settings ----------
+function toggleSettingsFields(){
+  const checked = document.querySelector('input[name=alertMethod]:checked');
+  const val = checked ? checked.value : 'none';
+  document.getElementById('emailField').style.display = (val === 'email') ? 'block' : 'none';
+  document.getElementById('mobileField').style.display = (val === 'mobile') ? 'block' : 'none';
+}
+function renderSettings(){
+  const radio = document.querySelector('input[name=alertMethod][value="' + settings.alertMethod + '"]');
+  if(radio) radio.checked = true;
+  document.getElementById('alertEmailInput').value = settings.email || "";
+  document.getElementById('alertMobileInput').value = settings.mobile || "";
+  if(!settings.email && window.getSignedInEmail){
+    const e = window.getSignedInEmail();
+    if(e) document.getElementById('alertEmailInput').placeholder = e;
+  }
+  toggleSettingsFields();
+}
+function syncSettingsFromInputs(){
+  const checked = document.querySelector('input[name=alertMethod]:checked');
+  settings.alertMethod = checked ? checked.value : 'none';
+  settings.email = document.getElementById('alertEmailInput').value.trim();
+  settings.mobile = document.getElementById('alertMobileInput').value.trim();
+}
+function autosaveSettings(){
+  syncSettingsFromInputs();
+  saveToStorage(); // respects the Autosave on/off preference, same as every other field
+}
+function manualSaveSettings(){
+  syncSettingsFromInputs();
+  doSave();
+  hasUnsavedChanges = false;
+  const btn = document.getElementById('saveSettingsBtn');
+  if(!btn) return;
+  const original = btn.textContent;
+  btn.textContent = storageAvailable ? "\u2713 Saved" : "\u2715 Save failed";
+  setTimeout(() => { btn.textContent = original; }, 1400);
+}
 
 // ---------- Structural actions (trigger re-render) ----------
 function addPlan(){
@@ -499,15 +1466,35 @@ function importPlans(evt){
 }
 function printBoard(){ window.print(); }
 
+function toggleFileMenu(evt){
+  evt.stopPropagation();
+  const menu = document.getElementById('fileMenu');
+  const btn = document.getElementById('fileMenuBtn');
+  const nowOpen = !menu.classList.contains('show');
+  menu.classList.toggle('show', nowOpen);
+  if(btn) btn.setAttribute('aria-expanded', String(nowOpen));
+}
+function closeFileMenu(){
+  const menu = document.getElementById('fileMenu');
+  const btn = document.getElementById('fileMenuBtn');
+  if(menu) menu.classList.remove('show');
+  if(btn) btn.setAttribute('aria-expanded', 'false');
+}
+document.addEventListener('click', (e) => {
+  const wrap = document.getElementById('fileMenuWrap');
+  if(wrap && !wrap.contains(e.target)) closeFileMenu();
+});
+document.addEventListener('keydown', (e) => { if(e.key === 'Escape') closeFileMenu(); });
+
 // ---------- Bridge for the Firebase/cloud-sync module below ----------
-// The module script can't see `plans`/`activeIndex` directly (different scope),
-// so it reads/writes state through these two functions instead.
-function getBoardState(){ return { plans, activeIndex }; }
+function getBoardState(){ return { plans, activeIndex, settings }; }
 function setBoardState(data){
   if(!data || !Array.isArray(data.plans) || data.plans.length===0) return;
   plans = data.plans;
   activeIndex = Math.min(data.activeIndex || 0, plans.length - 1);
+  if(data.settings) settings = Object.assign(settings, data.settings);
   render();
+  if(currentView === 'settings') renderSettings();
 }
 window.getBoardState = getBoardState;
 window.setBoardState = setBoardState;
@@ -516,13 +1503,21 @@ function updateAuthUI(user){
   const signInBtn = document.getElementById('signInBtn');
   const userInfo = document.getElementById('userInfo');
   const userEmail = document.getElementById('userEmail');
+  const signInBtnTop = document.getElementById('signInBtnTop');
+  const userInfoTop = document.getElementById('userInfoTop');
+  const userEmailTop = document.getElementById('userEmailTop');
   if(user){
     signInBtn.style.display = 'none';
-    userInfo.style.display = 'inline-flex';
+    userInfo.style.display = 'flex';
     userEmail.textContent = user.displayName || user.email || "Signed in";
+    signInBtnTop.style.display = 'none';
+    userInfoTop.style.display = 'flex';
+    userEmailTop.textContent = user.displayName || user.email || "Signed in";
   } else {
     signInBtn.style.display = 'inline-block';
     userInfo.style.display = 'none';
+    signInBtnTop.style.display = 'flex';
+    userInfoTop.style.display = 'none';
   }
 }
 window.updateAuthUI = updateAuthUI;
@@ -531,8 +1526,14 @@ function setCloudStatus(text, state){
   // state: "on" | "warn" | "off"
   const dot = document.getElementById('cloudDot');
   if(dot) dot.className = "cloud-dot" + (state === "on" ? " on" : state === "warn" ? " warn" : "");
-  const el = document.getElementById('saveStatus');
-  if(el && text) el.textContent = text;
+  const dotTop = document.getElementById('cloudDotTop');
+  if(dotTop) dotTop.className = "cloud-dot" + (state === "on" ? " on" : state === "warn" ? " warn" : "");
+
+  // Drive the "Your account" row in the sidebar autosave badge.
+  const cloudRowDot = document.getElementById('cloudSaveDot');
+  const cloudRowDetail = document.getElementById('cloudSaveDetail');
+  if(cloudRowDot) cloudRowDot.className = "dot" + (state === "on" ? "" : state === "warn" ? " warn" : " off");
+  if(cloudRowDetail && text) cloudRowDetail.textContent = text;
 }
 window.setCloudStatus = setCloudStatus;
 
@@ -658,7 +1659,7 @@ function buildActionsSection(actions){
 
   const table = document.createElement('table');
   table.innerHTML = `<thead><tr>
-    <th>Action</th><th>Duration</th><th>Time of Day</th><th>Resources Required</th><th>Status</th><th></th>
+    <th>Action</th><th>Duration</th><th>Time of day</th><th>Resources required</th><th>Status</th><th></th>
   </tr></thead>`;
   const tbody = document.createElement('tbody');
 
@@ -666,10 +1667,10 @@ function buildActionsSection(actions){
     const tr = document.createElement('tr');
 
     tr.appendChild(makeCell(a.action, "Action", (v)=>updateAction(i,'action',v), true));
-    tr.appendChild(makeCell(a.duration, "Duration", (v)=>updateAction(i,'duration',v), false, "e.g. Aug 10-24, 2026 or Every Mon/Wed"));
-    tr.appendChild(makeCell(a.time, "Time of Day", (v)=>updateAction(i,'time',v), false, "e.g. 18:00-20:00"));
+    tr.appendChild(makeDateRangeCell(a.duration, "Duration", (v)=>updateAction(i,'duration',v)));
+    tr.appendChild(makeTimeRangeCell(a.time, "Time of Day", (v)=>updateAction(i,'time',v)));
     tr.appendChild(makeCell(a.resources, "Resources", (v)=>updateAction(i,'resources',v), true));
-    tr.appendChild(makeCell(a.status, "Status", (v)=>updateAction(i,'status',v), false, "Not started / In progress / Done"));
+    tr.appendChild(makeStatusCell(a.status, "Status", (v)=>updateAction(i,'status',v)));
 
     const tdRm = document.createElement('td');
     tdRm.className = "col-remove";
@@ -707,7 +1708,7 @@ function buildLogSection(log){
 
   log.forEach((entry, i) => {
     const tr = document.createElement('tr');
-    tr.appendChild(makeCell(entry.date, "Date", (v)=>updateLog(i,'date',v), false, "YYYY-MM-DD"));
+    tr.appendChild(makeDateCell(entry.date, "Date", (v)=>updateLog(i,'date',v)));
     tr.appendChild(makeCell(entry.change, "Change Made", (v)=>updateLog(i,'change',v), true));
     tr.appendChild(makeCell(entry.reason, "Reason", (v)=>updateLog(i,'reason',v), true));
 
@@ -728,6 +1729,415 @@ function buildLogSection(log){
   return section;
 }
 
+function isISODate(s){ return /^\d{4}-\d{2}-\d{2}$/.test(s || ""); }
+function isHHMM(s){ return /^\d{2}:\d{2}$/.test(s || ""); }
+
+const CALENDAR_ICON = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>';
+const CLOCK_ICON = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>';
+
+function formatDateDisplay(iso){
+  if(!isISODate(iso)) return null;
+  const [y,m,d] = iso.split('-').map(Number);
+  const dt = new Date(y, m-1, d);
+  return dt.toLocaleDateString(undefined, {month:'short', day:'numeric', year:'numeric'});
+}
+function formatTimeDisplay(hhmm){
+  if(!isHHMM(hhmm)) return null;
+  const [h,m] = hhmm.split(':').map(Number);
+  const dt = new Date(); dt.setHours(h,m,0,0);
+  return dt.toLocaleTimeString(undefined, {hour:'numeric', minute:'2-digit'});
+}
+
+const MONTH_NAMES = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+function daysInMonth(year, month){ return new Date(year, month, 0).getDate(); }
+
+// Month/Day/Year picked from fixed dropdown lists only — no free-text entry.
+// Optional getMin(): returns an ISO date string ("YYYY-MM-DD") that this field
+// may not go earlier than. Options before it are simply not offered.
+function makeDateSelectField({value, label, onChange, getMin}){
+  const wrap = document.createElement('div');
+  wrap.className = "pill-field";
+
+  const pill = document.createElement('button');
+  pill.type = "button";
+  pill.className = "pill-btn";
+  const icon = document.createElement('span');
+  icon.className = "pill-icon";
+  icon.innerHTML = CALENDAR_ICON;
+  const text = document.createElement('span');
+  text.className = "pill-text";
+  pill.appendChild(icon);
+  pill.appendChild(text);
+
+  const editRow = document.createElement('div');
+  editRow.className = "date-edit-row";
+  editRow.style.display = "none";
+
+  const parts = isISODate(value) ? value.split('-').map(Number) : [null, null, null];
+  const [y0, m0, d0] = parts;
+  const nowYear = new Date().getFullYear();
+
+  const monthSel = document.createElement('select');
+  monthSel.className = "date-select date-select-month";
+
+  const daySel = document.createElement('select');
+  daySel.className = "date-select date-select-day";
+
+  const yearSel = document.createElement('select');
+  yearSel.className = "date-select date-select-year";
+
+  function minParts(){
+    if(!getMin) return null;
+    const m = getMin();
+    return isISODate(m) ? m.split('-').map(Number) : null; // [y,m,d]
+  }
+
+  function populateYears(preferred){
+    const min = minParts();
+    const keep = preferred !== undefined ? preferred : yearSel.value;
+    yearSel.innerHTML = "";
+    yearSel.appendChild(new Option("Year", ""));
+    for(let y = nowYear - 2; y <= nowYear + 8; y++){
+      if(min && y < min[0]) continue;
+      yearSel.appendChild(new Option(String(y), String(y)));
+    }
+    yearSel.value = [...yearSel.options].some(o => o.value === keep) ? keep : "";
+  }
+
+  function populateMonths(preferred){
+    const min = minParts();
+    const keep = preferred !== undefined ? preferred : monthSel.value;
+    const curYear = yearSel.value ? Number(yearSel.value) : null;
+    const restrictFrom = (min && curYear === min[0]) ? min[1] : null;
+    monthSel.innerHTML = "";
+    monthSel.appendChild(new Option("Month", ""));
+    MONTH_NAMES.forEach((name, idx) => {
+      const mm = idx + 1;
+      if(restrictFrom !== null && mm < restrictFrom) return;
+      monthSel.appendChild(new Option(name, pad2(mm)));
+    });
+    monthSel.value = [...monthSel.options].some(o => o.value === keep) ? keep : "";
+  }
+
+  function populateDays(preferred){
+    const min = minParts();
+    const keepDay = preferred !== undefined ? preferred : daySel.value;
+    const y = yearSel.value ? Number(yearSel.value) : nowYear;
+    const m = monthSel.value ? Number(monthSel.value) : 1;
+    const total = daysInMonth(y, m);
+    const curYear = yearSel.value ? Number(yearSel.value) : null;
+    const curMonth = monthSel.value ? Number(monthSel.value) : null;
+    const restrictFrom = (min && curYear === min[0] && curMonth === min[1]) ? min[2] : null;
+    daySel.innerHTML = "";
+    daySel.appendChild(new Option("Day", ""));
+    for(let d = 1; d <= total; d++){
+      if(restrictFrom !== null && d < restrictFrom) continue;
+      daySel.appendChild(new Option(pad2(d), pad2(d)));
+    }
+    daySel.value = [...daySel.options].some(o => o.value === keepDay) ? keepDay : "";
+  }
+
+  populateYears(y0 ? String(y0) : "");
+  populateMonths(m0 ? pad2(m0) : "");
+  populateDays(d0 ? pad2(d0) : "");
+
+  const doneBtn = document.createElement('button');
+  doneBtn.type = "button";
+  doneBtn.className = "time-done-btn";
+  doneBtn.textContent = "\u2713";
+  doneBtn.title = "Done";
+
+  function currentValue(){
+    return (yearSel.value && monthSel.value && daySel.value) ? (yearSel.value + '-' + monthSel.value + '-' + daySel.value) : "";
+  }
+  function refreshPill(){
+    const disp = formatDateDisplay(currentValue());
+    text.textContent = disp || label;
+    pill.classList.toggle('has-value', !!disp);
+  }
+  refreshPill();
+
+  function emit(){ onChange(currentValue()); refreshPill(); }
+  monthSel.onchange = () => { populateDays(); emit(); };
+  yearSel.onchange = () => { populateMonths(); populateDays(); emit(); };
+  daySel.onchange = emit;
+
+  function openEditor(){ pill.style.display = "none"; editRow.style.display = "flex"; }
+  function closeEditor(){ editRow.style.display = "none"; pill.style.display = "flex"; }
+
+  pill.onclick = openEditor;
+  doneBtn.onclick = closeEditor;
+
+  editRow.appendChild(monthSel);
+  editRow.appendChild(daySel);
+  editRow.appendChild(yearSel);
+  editRow.appendChild(doneBtn);
+
+  wrap.appendChild(pill);
+  wrap.appendChild(editRow);
+
+  // Called by a paired "From" field when its value changes, so this "To"
+  // field's option lists (and current value, if it's now invalid) update.
+  wrap.refreshMinConstraint = function(){
+    const before = currentValue();
+    populateYears();
+    populateMonths();
+    populateDays();
+    if(currentValue() !== before) emit(); else refreshPill();
+  };
+
+  return wrap;
+}
+
+function makeDateRangeCell(value, label, onChange){
+  const td = document.createElement('td');
+  td.setAttribute('data-label', label);
+  const wrap = document.createElement('div');
+  wrap.className = "range-cell";
+  const parts = (value || "").split(/\s*to\s*/i);
+  let startVal = isISODate(parts[0]) ? parts[0] : "";
+  let endVal = isISODate(parts[1]) ? parts[1] : "";
+  function emit(){
+    let v = startVal;
+    if(endVal) v += " to " + endVal;
+    onChange(v);
+  }
+  let endField;
+  const startField = makeDateSelectField({
+    value:startVal, label:"From", onChange:(v)=>{
+      startVal = v;
+      emit();
+      if(endField) endField.refreshMinConstraint();
+    }
+  });
+  endField = makeDateSelectField({
+    value:endVal, label:"To", getMin:() => startVal, onChange:(v)=>{ endVal = v; emit(); }
+  });
+  wrap.appendChild(startField);
+  wrap.appendChild(endField);
+  td.appendChild(wrap);
+  return td;
+}
+
+function pad2(n){ return String(n).padStart(2,'0'); }
+
+// Hour/minute picked from fixed dropdown lists only — no free-text entry.
+// Optional getMin(): returns an "HH:MM" string that this field may not go
+// earlier than. Options before it are simply not offered.
+function makeTimeSelectField({value, label, onChange, getMin}){
+  const wrap = document.createElement('div');
+  wrap.className = "pill-field";
+
+  const pill = document.createElement('button');
+  pill.type = "button";
+  pill.className = "pill-btn";
+  const icon = document.createElement('span');
+  icon.className = "pill-icon";
+  icon.innerHTML = CLOCK_ICON;
+  const text = document.createElement('span');
+  text.className = "pill-text";
+  pill.appendChild(icon);
+  pill.appendChild(text);
+
+  const editRow = document.createElement('div');
+  editRow.className = "time-edit-row";
+  editRow.style.display = "none";
+
+  const [h0, m0] = isHHMM(value) ? value.split(':') : ["", ""];
+
+  const hourSel = document.createElement('select');
+  hourSel.className = "time-select";
+
+  const minSel = document.createElement('select');
+  minSel.className = "time-select";
+
+  function minParts(){
+    if(!getMin) return null;
+    const m = getMin();
+    return isHHMM(m) ? m.split(':') : null; // ["HH","MM"] as zero-padded strings
+  }
+
+  function populateHours(preferred){
+    const min = minParts();
+    const keep = preferred !== undefined ? preferred : hourSel.value;
+    hourSel.innerHTML = "";
+    hourSel.appendChild(new Option("Hr", ""));
+    for(let h=0; h<24; h++){
+      const hs = pad2(h);
+      if(min && hs < min[0]) continue;
+      hourSel.appendChild(new Option(hs, hs));
+    }
+    hourSel.value = [...hourSel.options].some(o => o.value === keep) ? keep : "";
+  }
+
+  function populateMinutes(preferred){
+    const min = minParts();
+    const keep = preferred !== undefined ? preferred : minSel.value;
+    const restrictFrom = (min && hourSel.value === min[0]) ? min[1] : null;
+    minSel.innerHTML = "";
+    minSel.appendChild(new Option("Min", ""));
+    for(let m=0; m<60; m++){
+      const ms = pad2(m);
+      if(restrictFrom !== null && ms < restrictFrom) continue;
+      minSel.appendChild(new Option(ms, ms));
+    }
+    minSel.value = [...minSel.options].some(o => o.value === keep) ? keep : "";
+  }
+
+  populateHours(h0);
+  populateMinutes(m0);
+
+  const sep = document.createElement('span');
+  sep.className = "time-sep";
+  sep.textContent = ":";
+
+  const doneBtn = document.createElement('button');
+  doneBtn.type = "button";
+  doneBtn.className = "time-done-btn";
+  doneBtn.textContent = "\u2713";
+  doneBtn.title = "Done";
+
+  function currentValue(){
+    return (hourSel.value && minSel.value) ? (hourSel.value + ':' + minSel.value) : "";
+  }
+  function refreshPill(){
+    const disp = formatTimeDisplay(currentValue());
+    text.textContent = disp || label;
+    pill.classList.toggle('has-value', !!disp);
+  }
+  refreshPill();
+
+  function emit(){ onChange(currentValue()); refreshPill(); }
+  hourSel.onchange = () => { populateMinutes(); emit(); };
+  minSel.onchange = emit;
+
+  function openEditor(){ pill.style.display = "none"; editRow.style.display = "flex"; }
+  function closeEditor(){ editRow.style.display = "none"; pill.style.display = "flex"; }
+
+  pill.onclick = openEditor;
+  doneBtn.onclick = closeEditor;
+
+  editRow.appendChild(hourSel);
+  editRow.appendChild(sep);
+  editRow.appendChild(minSel);
+  editRow.appendChild(doneBtn);
+
+  wrap.appendChild(pill);
+  wrap.appendChild(editRow);
+
+  // Called by a paired "From" field when its value changes, so this "To"
+  // field's option lists (and current value, if it's now invalid) update.
+  wrap.refreshMinConstraint = function(){
+    const before = currentValue();
+    populateHours();
+    populateMinutes();
+    if(currentValue() !== before) emit(); else refreshPill();
+  };
+
+  return wrap;
+}
+
+function makeTimeRangeCell(value, label, onChange){
+  const td = document.createElement('td');
+  td.setAttribute('data-label', label);
+  const wrap = document.createElement('div');
+  wrap.className = "range-cell";
+  const parts = (value || "").split(/\s*(?:to|–|-)\s*/);
+  let startVal = isHHMM(parts[0]) ? parts[0] : "";
+  let endVal = isHHMM(parts[1]) ? parts[1] : "";
+  function emit(){
+    let v = startVal;
+    if(endVal) v += "–" + endVal;
+    onChange(v);
+  }
+  let endField;
+  const startField = makeTimeSelectField({
+    value:startVal, label:"From", onChange:(v)=>{
+      startVal = v;
+      emit();
+      if(endField) endField.refreshMinConstraint();
+    }
+  });
+  endField = makeTimeSelectField({
+    value:endVal, label:"To", getMin:() => startVal, onChange:(v)=>{ endVal = v; emit(); }
+  });
+  wrap.appendChild(startField);
+  wrap.appendChild(endField);
+  td.appendChild(wrap);
+  return td;
+}
+
+const STATUS_OPTIONS = ["Not started", "In progress", "Finished"];
+
+function makeStatusCell(value, label, onChange){
+  const td = document.createElement('td');
+  td.setAttribute('data-label', label);
+  const wrap = document.createElement('div');
+  wrap.className = "status-cell";
+
+  const norm = (value || "").trim().toLowerCase();
+  let current = STATUS_OPTIONS.find(o => o.toLowerCase() === norm) || (norm === "done" ? "Finished" : "");
+
+  const pill = document.createElement('button');
+  pill.type = "button";
+  pill.className = "pill-btn status-pill";
+
+  const options = document.createElement('div');
+  options.className = "status-options";
+  options.style.display = "none";
+
+  function statusClass(v){ return v ? "status-" + v.toLowerCase().replace(/\s+/g,'-') : ""; }
+  function refreshPill(){
+    pill.textContent = current || "Select status";
+    pill.className = "pill-btn status-pill" + (current ? " has-value " + statusClass(current) : "");
+  }
+  refreshPill();
+
+  function openOptions(){ pill.style.display = "none"; options.style.display = "flex"; }
+  function closeOptions(){ options.style.display = "none"; pill.style.display = "flex"; refreshPill(); }
+  pill.onclick = openOptions;
+
+  STATUS_OPTIONS.forEach(opt => {
+    const optWrap = document.createElement('label');
+    optWrap.className = "status-opt";
+    const cb = document.createElement('input');
+    cb.type = "checkbox";
+    cb.checked = current === opt;
+    cb.onchange = () => {
+      if(cb.checked){
+        options.querySelectorAll('input[type=checkbox]').forEach(other => { if(other !== cb) other.checked = false; });
+        current = opt;
+        onChange(opt);
+      } else {
+        current = "";
+        onChange("");
+      }
+      closeOptions();
+    };
+    const txt = document.createElement('span');
+    txt.textContent = opt;
+    optWrap.appendChild(cb);
+    optWrap.appendChild(txt);
+    options.appendChild(optWrap);
+  });
+
+  wrap.appendChild(pill);
+  wrap.appendChild(options);
+  td.appendChild(wrap);
+  return td;
+}
+
+function makeDateCell(value, label, onChange){
+  const td = document.createElement('td');
+  td.setAttribute('data-label', label);
+  const el = document.createElement('input');
+  el.type = "date";
+  el.value = isISODate(value) ? value : "";
+  el.onchange = (e) => onChange(e.target.value);
+  td.appendChild(el);
+  return td;
+}
+
 function makeCell(value, label, onChange, useTextarea, placeholder){
   const td = document.createElement('td');
   td.setAttribute('data-label', label);
@@ -740,15 +2150,16 @@ function makeCell(value, label, onChange, useTextarea, placeholder){
   return td;
 }
 
-render();
+// initial paint: build the My Plans content in the background, but land on Home
+renderTabs();
+renderBoard();
+renderSettings();
+if(autosaveEnabled){ doSave(); } else { updateSaveStatus(); }
+showView('home');
 </script>
 
 <!-- ============================================================
      CLOUD SYNC (Firebase Auth + Firestore)
-     Fill in YOUR_FIREBASE_CONFIG below with your own project's
-     keys (see setup instructions provided alongside this file).
-     If left unconfigured, the app still works fine — it just
-     stays local-only and the Sign in button will say so.
      ============================================================ -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
@@ -759,16 +2170,14 @@ render();
     getFirestore, doc, setDoc, getDoc, serverTimestamp
   } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 
-  // ====== PASTE YOUR FIREBASE CONFIG HERE ======
   const firebaseConfig = {
-  apiKey: "AIzaSyCW4lg5DeqRJS6cnZO9vRTgO-FIo63Ktfg",
-  authDomain: "my-plan-mini-app.firebaseapp.com",
-  projectId: "my-plan-mini-app",
-  storageBucket: "my-plan-mini-app.firebasestorage.app",
-  messagingSenderId: "245314920603",
-  appId: "1:245314920603:web:3d3ebfdbbc5a291825663e"
-};
-  // ==============================================
+    apiKey: "AIzaSyCW4lg5DeqRJS6cnZO9vRTgO-FIo63Ktfg",
+    authDomain: "my-plan-mini-app.firebaseapp.com",
+    projectId: "my-plan-mini-app",
+    storageBucket: "my-plan-mini-app.firebasestorage.app",
+    messagingSenderId: "245314920603",
+    appId: "1:245314920603:web:3d3ebfdbbc5a291825663e"
+  };
 
   let auth = null, db = null, currentUser = null, cloudReady = false;
 
@@ -790,6 +2199,7 @@ render();
   if(!cloudReady){
     const btn = document.getElementById('signInBtn');
     if(btn){ btn.title = "Cloud sync isn't set up yet — see setup instructions."; }
+    if(window.setCloudStatus) window.setCloudStatus("Cloud sync not set up", "off");
   }
 
   const provider = new GoogleAuthProvider();
@@ -811,6 +2221,10 @@ render();
     await signOut(auth);
   };
 
+  window.getSignedInEmail = function(){
+    return currentUser ? (currentUser.email || "") : "";
+  };
+
   let saveTimer = null;
   window.queueCloudSave = function(){
     if(!cloudReady || !currentUser) return;
@@ -825,6 +2239,7 @@ render();
       await setDoc(doc(db, "planboards", currentUser.uid), {
         plans: state.plans,
         activeIndex: state.activeIndex,
+        settings: state.settings,
         updatedAt: serverTimestamp()
       });
       window.setCloudStatus("Synced to cloud " + new Date().toLocaleTimeString(), "on");
@@ -840,11 +2255,10 @@ render();
       if(snap.exists()){
         const data = snap.data();
         if(Array.isArray(data.plans) && data.plans.length){
-          window.setBoardState({ plans: data.plans, activeIndex: data.activeIndex });
+          window.setBoardState({ plans: data.plans, activeIndex: data.activeIndex, settings: data.settings });
         }
         window.setCloudStatus("Loaded from cloud", "on");
       } else {
-        // First time this account has signed in — push current local plans up as the starting point.
         await doCloudSave();
         window.setCloudStatus("Cloud sync on — starting from your local plans", "on");
       }
