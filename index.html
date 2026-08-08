@@ -116,6 +116,33 @@
     .feedback-fab{ right:14px; bottom:14px; padding:11px 14px; }
     .feedback-overlay{ padding:14px; }
   }
+
+  /* ---------- Custom confirm modal ---------- */
+  .confirm-overlay{
+    position:fixed; inset:0; background:rgba(0,0,0,0.45); z-index:980;
+    display:none; align-items:center; justify-content:center; padding:20px;
+  }
+  .confirm-overlay.open{ display:flex; }
+  .confirm-panel{
+    width:340px; max-width:100%;
+    background:var(--surface); color:var(--ink);
+    border-radius:12px; box-shadow:0 14px 34px rgba(0,0,0,0.32);
+    padding:20px; font-family:var(--font-ui);
+    animation:feedbackIn .15s ease;
+  }
+  .confirm-panel h3{ margin:0 0 8px; font-size:15px; }
+  .confirm-panel p{ margin:0; font-size:13px; color:var(--muted); line-height:1.5; }
+  .confirm-actions{ display:flex; justify-content:flex-end; gap:8px; margin-top:16px; }
+  .confirm-cancel{
+    background:none; border:1.5px solid var(--line); border-radius:7px; color:var(--ink);
+    font-size:13px; cursor:pointer; padding:8px 14px; font-family:var(--font-ui);
+  }
+  .confirm-cancel:hover{ background:var(--surface-alt); }
+  .confirm-delete{
+    background:#E86A6A; color:#fff; border:none; border-radius:7px;
+    padding:8px 14px; font-size:13px; font-weight:600; cursor:pointer; font-family:var(--font-ui);
+  }
+  .confirm-delete:hover{ background:#D95555; }
   html,body{ height:100%; }
   html{ background:var(--paper); }
   body{
@@ -706,16 +733,14 @@
   .toolbar-dropdown{ position:relative; display:inline-block; }
   .toolbar-menu{
     display:none;
-    position:absolute;
-    top:calc(100% + 8px);
-    left:0;
+    position:fixed;
     background:var(--surface);
     border:1.5px solid var(--line);
     border-radius:10px;
     box-shadow:0 12px 30px rgba(20,30,45,0.18), 0 3px 8px rgba(20,30,45,0.08);
     min-width:210px;
     padding:6px;
-    z-index:60;
+    z-index:970;
     flex-direction:column;
     animation:statusPopIn .14s ease;
   }
@@ -1305,8 +1330,7 @@
       top:62px;
       margin:-14px -16px 20px -16px;
       padding:14px 16px;
-      flex-wrap:nowrap;
-      overflow-x:auto;
+      flex-wrap:wrap;
     }
   }
 
@@ -1880,10 +1904,15 @@ function addPlan(){
   render();
 }
 function removePlan(i){
-  if(!confirm("Delete this plan? This cannot be undone.")) return;
-  plans.splice(i,1);
-  activeIndex = plans.length ? Math.min(activeIndex, plans.length - 1) : -1;
-  render();
+  showConfirmModal(
+    "Delete this plan?",
+    "This can't be undone.",
+    () => {
+      plans.splice(i,1);
+      activeIndex = plans.length ? Math.min(activeIndex, plans.length - 1) : -1;
+      render();
+    }
+  );
 }
 function switchPlan(i){ activeIndex = i; render(); }
 function renamePlan(i){
@@ -1953,6 +1982,20 @@ function toggleFileMenu(evt){
   const menu = document.getElementById('fileMenu');
   const btn = document.getElementById('fileMenuBtn');
   const nowOpen = !menu.classList.contains('show');
+  if(nowOpen){
+    // Detach the menu to <body> so it's never clipped or stacked behind
+    // content by whatever ancestor stacking/overflow context it started in
+    // (position:sticky containers can misbehave with nested absolute
+    // children on some mobile browsers).
+    if(menu.parentElement !== document.body) document.body.appendChild(menu);
+    const rect = btn.getBoundingClientRect();
+    const menuWidth = 210;
+    let left = rect.left;
+    if(left + menuWidth > window.innerWidth - 10) left = window.innerWidth - menuWidth - 10;
+    if(left < 10) left = 10;
+    menu.style.top = (rect.bottom + 8) + 'px';
+    menu.style.left = left + 'px';
+  }
   menu.classList.toggle('show', nowOpen);
   if(btn) btn.setAttribute('aria-expanded', String(nowOpen));
 }
@@ -1963,9 +2006,13 @@ function closeFileMenu(){
   if(btn) btn.setAttribute('aria-expanded', 'false');
 }
 document.addEventListener('click', (e) => {
-  const wrap = document.getElementById('fileMenuWrap');
-  if(wrap && !wrap.contains(e.target)) closeFileMenu();
+  const menu = document.getElementById('fileMenu');
+  const btn = document.getElementById('fileMenuBtn');
+  if(!menu || !btn) return;
+  if(!menu.contains(e.target) && !btn.contains(e.target)) closeFileMenu();
 });
+window.addEventListener('scroll', () => closeFileMenu(), true);
+window.addEventListener('resize', () => closeFileMenu());
 document.addEventListener('keydown', (e) => { if(e.key === 'Escape') closeFileMenu(); });
 
 // ---------- Bridge for the Firebase/cloud-sync module below ----------
@@ -2965,6 +3012,17 @@ showView('home');
     </div>
   </div>
 
+  <div class="confirm-overlay" id="confirmOverlay" onclick="if(event.target===this) closeConfirmModal()">
+    <div class="confirm-panel">
+      <h3 id="confirmTitle">Delete this plan?</h3>
+      <p id="confirmMessage">This can't be undone.</p>
+      <div class="confirm-actions">
+        <button class="confirm-cancel" onclick="closeConfirmModal()">Cancel</button>
+        <button class="confirm-delete" id="confirmDeleteBtn">Delete</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     const FEEDBACK_WORKER_URL = "https://myplanfeedback.eliabungata.workers.dev";
 
@@ -3035,6 +3093,27 @@ showView('home');
         statusEl.className = 'feedback-status err';
       });
     }
+
+    // ---------- Custom confirm modal (replaces native confirm()) ----------
+    let _confirmAction = null;
+    function showConfirmModal(title, message, onConfirm){
+      document.getElementById('confirmTitle').textContent = title;
+      document.getElementById('confirmMessage').textContent = message;
+      _confirmAction = onConfirm;
+      document.getElementById('confirmOverlay').classList.add('open');
+    }
+    function closeConfirmModal(){
+      document.getElementById('confirmOverlay').classList.remove('open');
+      _confirmAction = null;
+    }
+    document.getElementById('confirmDeleteBtn').addEventListener('click', () => {
+      const action = _confirmAction;
+      closeConfirmModal();
+      if(action) action();
+    });
+    document.addEventListener('keydown', (e) => {
+      if(e.key === 'Escape' && document.getElementById('confirmOverlay').classList.contains('open')) closeConfirmModal();
+    });
   </script>
 </body>
 </html>
