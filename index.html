@@ -7,10 +7,25 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<script>
+  // Set theme before first paint to avoid a flash of the wrong theme.
+  (function(){
+    try{
+      const saved = localStorage.getItem("planBoardTheme");
+      if(saved === "light" || saved === "dark"){
+        document.documentElement.setAttribute('data-theme', saved);
+        return;
+      }
+    }catch(e){}
+    const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    document.documentElement.setAttribute('data-theme', prefersDark ? 'dark' : 'light');
+  })();
+</script>
 <style>
   :root{
     --navy:#1F4E78;
     --navy-dark:#163A5A;
+    --accent-text:#163A5A;
     --paper:#F7F5EF;
     --grid:#E9EDF1;
     --amber:#F2A413;
@@ -20,25 +35,102 @@
     --line:#D3D9E0;
     --danger:#B23A3A;
     --good:#2E7D4F;
+    --surface:#fff;
+    --surface-alt:#F3F6F9;
+    --surface-hover:#D5DDE5;
+    --surface-focus:#EEF4FA;
     --sidebar-w:230px;
     --font-ui:'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     --font-head:'Source Serif 4', Georgia, 'Times New Roman', serif;
     --radius:8px;
     --shadow-card:0 1px 3px rgba(20,30,45,0.06), 0 1px 2px rgba(20,30,45,0.05);
   }
+  html[data-theme="dark"]{
+    --navy:#2E6BA8;
+    --navy-dark:#0F2436;
+    --accent-text:#7EB6E8;
+    --paper:#14181D;
+    --grid:#1F252C;
+    --amber:#F2A413;
+    --amber-dark:#E0A93A;
+    --ink:#E7EAEE;
+    --muted:#8A96A3;
+    --line:#2C333B;
+    --danger:#E06565;
+    --good:#4FBB80;
+    --surface:#1B2027;
+    --surface-alt:#1E242C;
+    --surface-hover:#262E37;
+    --surface-focus:#16283A;
+    --shadow-card:0 1px 3px rgba(0,0,0,0.35), 0 1px 2px rgba(0,0,0,0.25);
+  }
   *{box-sizing:border-box;}
+  .feedback-fab{
+    position:fixed; right:22px; bottom:22px; z-index:900;
+    display:flex; align-items:center; gap:8px;
+    padding:12px 16px; border-radius:999px; border:none; cursor:pointer;
+    background:var(--amber); color:#20272F; font-family:var(--font-ui);
+    font-size:13px; font-weight:600;
+    box-shadow:0 4px 14px rgba(0,0,0,0.22);
+    transition:transform .12s ease, box-shadow .12s ease, background .15s ease;
+  }
+  .feedback-fab:hover{ background:var(--amber-dark); transform:translateY(-1px); box-shadow:0 6px 18px rgba(0,0,0,0.28); }
+  .feedback-fab svg{ width:16px; height:16px; flex:none; }
+  .feedback-overlay{
+    position:fixed; inset:0; background:rgba(0,0,0,0.4); z-index:950;
+    display:none; align-items:flex-end; justify-content:flex-end;
+    padding:22px;
+  }
+  .feedback-overlay.open{ display:flex; }
+  .feedback-panel{
+    width:320px; max-width:calc(100vw - 44px);
+    background:var(--surface); color:var(--ink);
+    border-radius:12px; box-shadow:0 8px 28px rgba(0,0,0,0.32);
+    padding:16px; font-family:var(--font-ui);
+    animation:feedbackIn .15s ease;
+  }
+  @keyframes feedbackIn{ from{opacity:0; transform:translateY(8px);} to{opacity:1; transform:translateY(0);} }
+  .feedback-panel h3{ margin:0 0 4px; font-size:14px; }
+  .feedback-panel p{ margin:0 0 10px; font-size:12px; color:var(--muted); }
+  .feedback-panel textarea{
+    width:100%; min-height:88px; resize:vertical;
+    border:1px solid var(--line); border-radius:8px; padding:8px 10px;
+    font-family:var(--font-ui); font-size:13px; color:var(--ink); background:var(--surface-alt);
+  }
+  .feedback-panel textarea:focus{ outline:none; border-color:var(--amber); }
+  .feedback-hp{ position:absolute; left:-9999px; opacity:0; }
+  .feedback-actions{ display:flex; justify-content:flex-end; gap:8px; margin-top:10px; }
+  .feedback-cancel{
+    background:none; border:none; color:var(--muted); font-size:12px; cursor:pointer; padding:8px 10px;
+  }
+  .feedback-send{
+    background:var(--amber); color:#20272F; border:none; border-radius:7px;
+    padding:8px 14px; font-size:13px; font-weight:600; cursor:pointer;
+  }
+  .feedback-send:hover{ background:var(--amber-dark); }
+  .feedback-send:disabled{ opacity:0.6; cursor:default; }
+  .feedback-status{ margin-top:8px; font-size:12px; }
+  .feedback-status.ok{ color:var(--good); }
+  .feedback-status.err{ color:#E86A6A; }
+  @media (max-width:520px){
+    .feedback-fab{ right:14px; bottom:14px; padding:11px 14px; }
+    .feedback-overlay{ padding:14px; }
+  }
   html,body{ height:100%; }
+  html{ background:var(--paper); }
   body{
     margin:0;
     font-family: var(--font-ui);
     font-size:14px;
-    background:
-      linear-gradient(var(--grid) 1px, transparent 1px) 0 0/28px 28px,
-      linear-gradient(90deg, var(--grid) 1px, transparent 1px) 0 0/28px 28px,
-      var(--paper);
+    background-color:var(--paper);
+    background-image:
+      linear-gradient(var(--grid) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+    background-size:36px 36px;
     color:var(--ink);
     min-height:100vh;
     -webkit-font-smoothing:antialiased;
+    transition:background-color .25s ease, color .25s ease;
   }
 
   /* ---------- App shell / sidebar ---------- */
@@ -78,7 +170,7 @@
   }
   .sidebar .brand{
     font-family:var(--font-head);
-    font-size:19px;
+    font-size:clamp(16px, 3.4vw, 19px);
     font-weight:600;
     color:#fff;
     padding:22px 20px 6px 20px;
@@ -153,7 +245,7 @@
   .switch{ position:relative; display:inline-block; width:30px; height:17px; flex-shrink:0; }
   .switch input{ opacity:0; width:0; height:0; position:absolute; }
   .switch-slider{ position:absolute; inset:0; cursor:pointer; background:rgba(255,255,255,0.22); border-radius:17px; transition:background .15s ease; }
-  .switch-slider::before{ content:""; position:absolute; height:13px; width:13px; left:2px; top:2px; background:#fff; border-radius:50%; transition:transform .15s ease; }
+  .switch-slider::before{ content:""; position:absolute; height:13px; width:13px; left:2px; top:2px; background:var(--surface); border-radius:50%; transition:transform .15s ease; }
   .switch input:checked + .switch-slider{ background:#5BD08A; }
   .switch input:checked + .switch-slider::before{ transform:translateX(13px); }
   .switch input:focus-visible + .switch-slider{ outline:2px solid #fff; outline-offset:2px; }
@@ -213,7 +305,24 @@
     z-index:190;
     display:flex;
     align-items:center;
+    gap:8px;
   }
+  .theme-toggle-btn{
+    background:var(--surface);
+    color:var(--ink);
+    border:1.5px solid var(--line);
+    border-radius:7px;
+    width:38px; height:38px;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    box-shadow:0 2px 8px rgba(20,30,45,0.14);
+    transition:background .15s ease, border-color .15s ease, color .15s ease, transform .15s ease;
+    flex-shrink:0;
+  }
+  .theme-toggle-btn:hover{ border-color:var(--navy); color:var(--accent-text); transform:translateY(-1px); }
+  .theme-toggle-btn svg{ display:block; }
   .top-account-bar #signInBtnTop{
     background:var(--navy);
     color:#fff;
@@ -232,8 +341,8 @@
   }
   .top-account-bar #signInBtnTop:hover{ background:var(--navy-dark); }
   .top-account-bar #signInBtnTop .g-badge{
-    background:#fff;
-    color:var(--navy);
+    background:var(--surface);
+    color:var(--accent-text);
     border-radius:3px;
     font-size:11px;
     font-weight:bold;
@@ -243,7 +352,7 @@
     display:none;
     align-items:center;
     gap:8px;
-    background:#fff;
+    background:var(--surface);
     border:1px solid var(--line);
     border-radius:6px;
     padding:7px 8px 7px 12px;
@@ -253,7 +362,7 @@
   #userInfoTop .who{ display:flex; align-items:center; gap:6px; color:var(--ink); }
   #userInfoTop button{
     background:var(--paper);
-    color:var(--navy-dark);
+    color:var(--accent-text);
     border:1px solid var(--line);
     border-radius:4px;
     padding:6px 9px;
@@ -286,12 +395,12 @@
   /* ---------- Home view ---------- */
   #view-home{
     position:relative;
-    min-height:82vh;
+    min-height:100vh;
     display:flex;
     align-items:center;
     justify-content:center;
     isolation:isolate;
-    margin:-28px -28px 0 -28px;
+    margin:-28px -28px -50px -28px;
     padding:28px;
     overflow:hidden;
     border-radius:0;
@@ -321,6 +430,9 @@
     position:absolute;
     inset:0;
     background:radial-gradient(ellipse at 50% 40%, transparent 35%, rgba(5,10,18,0.5) 100%);
+  }
+  html[data-theme="dark"] .home-bg::after{
+    background:radial-gradient(ellipse at 50% 40%, transparent 30%, rgba(3,7,13,0.68) 100%);
   }
   .home-orb{
     position:absolute;
@@ -410,49 +522,11 @@
     animation:heroIn .8s ease .44s both;
   }
 
-  /* ---------- New Plan view ---------- */
-  .newplan-form{
-    max-width:460px;
-    margin:0 auto;
-    text-align:left;
-    background:#fff;
-    border:1px solid var(--line);
-    border-radius:var(--radius);
-    box-shadow:var(--shadow-card);
-    padding:24px;
-  }
-  .newplan-form label{
-    display:block;
-    font-size:11.5px;
-    font-weight:600;
-    color:var(--muted);
-    text-transform:uppercase;
-    letter-spacing:0.6px;
-    margin-bottom:7px;
-  }
-  .newplan-input{
-    width:100%;
-    padding:11px 12px;
-    border:1.5px solid var(--line);
-    border-radius:6px;
-    background:#fff;
-    font-family:var(--font-ui);
-    font-size:14px;
-    color:var(--ink);
-    margin-bottom:18px;
-    transition:border-color .15s ease, box-shadow .15s ease;
-  }
-  .newplan-input:focus{ outline:none; border-color:var(--navy); box-shadow:0 0 0 3px rgba(31,78,120,0.12); }
-  .newplan-actions{
-    display:flex;
-    justify-content:flex-end;
-  }
-
   /* ---------- Settings view ---------- */
   .view-title{
     font-family:var(--font-head);
     font-weight:600;
-    color:var(--navy-dark);
+    color:var(--accent-text);
     font-size:20px;
     margin:0 0 6px 0;
     border-left:3px solid var(--amber);
@@ -468,7 +542,7 @@
     font-family:var(--font-head);
     font-size:15px;
     font-weight:600;
-    color:var(--navy-dark);
+    color:var(--accent-text);
     margin:0 0 10px 0;
   }
   .settings-toggle-row{
@@ -483,11 +557,11 @@
   .settings-toggle-desc{ color:var(--muted); font-size:12px; line-height:1.5; }
   .switch-light .switch-slider{ background:#D3D9E0; }
   .switch-light input:checked + .switch-slider{ background:var(--good); }
-  .switch-light .switch-slider::before{ background:#fff; }
+  .switch-light .switch-slider::before{ background:var(--surface); }
 
   .settings-card{
     max-width:460px;
-    background:#fff;
+    background:var(--surface);
     border:1px solid var(--line);
     border-radius:var(--radius);
     box-shadow:var(--shadow-card);
@@ -513,7 +587,7 @@
     border-radius:6px;
     font-family:var(--font-ui);
     font-size:13.5px;
-    background:#fff;
+    background:var(--surface);
     transition:border-color .15s ease, box-shadow .15s ease;
   }
   .settings-subfield input:focus{ outline:none; border-color:var(--navy); box-shadow:0 0 0 3px rgba(31,78,120,0.12); }
@@ -526,18 +600,90 @@
   }
   #settingsStatus{ margin-left:10px; }
 
+  /* ---------- New Plan view ---------- */
+  .newplan-wrap{
+    max-width:620px;
+    margin:40px auto 0 auto;
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:16px;
+    box-shadow:var(--shadow-card);
+    padding:48px 40px;
+    text-align:center;
+  }
+  .newplan-title{
+    font-family:var(--font-head);
+    font-weight:600;
+    color:var(--accent-text);
+    font-size:30px;
+    margin:0 0 14px 0;
+  }
+  .newplan-sub{
+    color:var(--muted);
+    font-size:14.5px;
+    line-height:1.6;
+    max-width:440px;
+    margin:0 auto 30px auto;
+  }
+  .newplan-card{
+    text-align:left;
+    max-width:460px;
+    margin:0 auto;
+    background:var(--paper);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:22px;
+  }
+  .newplan-label{
+    display:block;
+    font-family:var(--font-ui);
+    font-size:11px;
+    font-weight:700;
+    letter-spacing:0.5px;
+    color:var(--accent-text);
+    margin-bottom:8px;
+  }
+  .newplan-input{
+    width:100%;
+    padding:12px 14px;
+    border:1.5px solid var(--line);
+    border-radius:6px;
+    font-family:var(--font-ui);
+    font-size:14px;
+    background:var(--surface);
+    transition:border-color .15s ease, box-shadow .15s ease;
+  }
+  .newplan-input:focus{ outline:none; border-color:var(--navy); box-shadow:0 0 0 3px rgba(31,78,120,0.12); }
+  .newplan-actions{
+    display:flex;
+    justify-content:flex-end;
+    margin-top:16px;
+  }
+  .newplan-actions .add-btn{ padding:10px 18px; font-size:13px; }
+  @media (max-width:700px){
+    .newplan-wrap{ padding:32px 20px; margin-top:10px; }
+    .newplan-title{ font-size:24px; }
+  }
+
   /* ---------- My Plans toolbar ---------- */
   .myplans-toolbar{
+    position:sticky;
+    top:0;
+    z-index:40;
     display:flex;
     gap:10px;
     align-items:center;
     flex-wrap:wrap;
-    margin-bottom:16px;
+    background:var(--paper);
+    margin:-28px -28px 20px -28px;
+    padding:18px 28px;
+    border-bottom:1px solid var(--line);
+    box-shadow:0 2px 10px rgba(20,30,45,0.05);
   }
   .toolbar-btn{
-    background:#fff;
+    background:var(--surface);
     border:1.5px solid var(--line);
-    color:var(--navy-dark);
+    color:var(--accent-text);
     padding:8px 15px;
     border-radius:6px;
     font-size:12.5px;
@@ -560,21 +706,23 @@
   .toolbar-menu{
     display:none;
     position:absolute;
-    top:calc(100% + 6px);
+    top:calc(100% + 8px);
     left:0;
-    background:#fff;
-    border:1px solid var(--line);
-    border-radius:8px;
-    box-shadow:var(--shadow-card);
+    background:var(--surface);
+    border:1.5px solid var(--line);
+    border-radius:10px;
+    box-shadow:0 12px 30px rgba(20,30,45,0.18), 0 3px 8px rgba(20,30,45,0.08);
     min-width:210px;
     padding:6px;
     z-index:60;
     flex-direction:column;
+    animation:statusPopIn .14s ease;
   }
   .toolbar-menu.show{ display:flex; }
   .toolbar-menu button{
     background:none;
     border:none;
+    border-left:3px solid transparent;
     text-align:left;
     padding:9px 10px;
     border-radius:5px;
@@ -583,8 +731,9 @@
     cursor:pointer;
     font-family:var(--font-ui);
     width:100%;
+    transition:background .13s ease, border-color .13s ease, padding-left .13s ease;
   }
-  .toolbar-menu button:hover{ background:var(--paper); }
+  .toolbar-menu button:hover{ background:var(--surface-alt); border-left-color:var(--amber); padding-left:13px; }
   .toolbar-menu-sep{ height:1px; background:var(--line); margin:5px 4px; }
 
   .save-status{
@@ -616,12 +765,18 @@
   .tabs{
     display:flex;
     gap:6px;
-    flex-wrap:wrap;
+    flex-wrap:nowrap;
     align-items:flex-end;
     margin-bottom:0;
+    overflow-x:auto;
+    overflow-y:hidden;
+    scrollbar-width:thin;
+    -webkit-overflow-scrolling:touch;
   }
+  .tabs::-webkit-scrollbar{ height:5px; }
+  .tabs::-webkit-scrollbar-thumb{ background:var(--line); border-radius:3px; }
   .tab{
-    background:#EDF1F5;
+    background:var(--surface-alt);
     border:1px solid var(--line);
     border-bottom:none;
     padding:9px 14px;
@@ -632,20 +787,22 @@
     color:var(--muted);
     position:relative;
     max-width:220px;
+    flex-shrink:0;
     white-space:nowrap;
     overflow:hidden;
     text-overflow:ellipsis;
     transition:background .15s ease;
   }
-  .tab:hover{ background:#E4EAF0; }
+  .tab:hover{ background:var(--surface-hover); }
   .tab.active{
-    background:var(--paper);
-    color:var(--navy-dark);
+    background:var(--surface);
+    color:var(--accent-text);
     font-weight:600;
     border-color:var(--navy);
-    border-bottom:2px solid var(--paper);
+    border-bottom:2px solid var(--surface);
     margin-bottom:-1px;
     z-index:2;
+    box-shadow:inset 0 3px 0 0 var(--navy);
   }
   .tab .close{
     margin-left:8px;
@@ -654,10 +811,32 @@
   }
   .tab .edit-icon{
     margin-left:8px;
-    color:var(--navy);
+    color:var(--accent-text);
     opacity:0.7;
   }
   .tab .edit-icon:hover{opacity:1;}
+  .empty-plans-state{
+    max-width:420px;
+    margin:60px auto;
+    padding:36px 28px;
+    text-align:center;
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    box-shadow:var(--shadow-card);
+  }
+  .empty-plans-state h2{
+    font-family:var(--font-head);
+    font-size:20px;
+    color:var(--accent-text);
+    margin:0 0 10px 0;
+  }
+  .empty-plans-state p{
+    color:var(--muted);
+    font-size:13.5px;
+    line-height:1.5;
+    margin:0 0 20px 0;
+  }
   .newplan-btn{
     background:var(--amber);
     color:#3D2A00;
@@ -667,6 +846,8 @@
     font-size:13px;
     font-weight:600;
     cursor:pointer;
+    flex-shrink:0;
+    white-space:nowrap;
     transition:background .15s ease;
   }
   .newplan-btn:hover{background:var(--amber-dark); color:#fff;}
@@ -675,7 +856,7 @@
   .board{
     border:1px solid var(--line);
     border-top:1px solid var(--navy);
-    background:#fff;
+    background:var(--surface);
     box-shadow:var(--shadow-card);
     margin:0 0 40px 0;
     padding:0;
@@ -697,7 +878,7 @@
     color:#fff;
     font-family:var(--font-head);
     font-weight:600;
-    font-size:18px;
+    font-size:clamp(15px, 2.6vw, 18px);
     padding:4px 2px;
   }
   .plan-title-row input:focus{outline:none; border-bottom:1px solid var(--amber);}
@@ -716,10 +897,10 @@
   .section-head h2{
     font-family:var(--font-head);
     font-weight:600;
-    font-size:14px;
+    font-size:clamp(12.5px, 2vw, 14px);
     letter-spacing:0.4px;
     text-transform:uppercase;
-    color:var(--navy-dark);
+    color:var(--accent-text);
     margin:0;
     border-left:3px solid var(--amber);
     padding-left:10px;
@@ -756,14 +937,14 @@
     padding:10px 12px;
     border:1.5px solid var(--line);
     border-radius:6px;
-    background:#fff;
+    background:var(--surface);
     color:var(--ink);
     transition:border-color .15s ease, box-shadow .15s ease;
   }
   .list-row textarea:focus{outline:none; border-color:var(--navy); box-shadow:0 0 0 3px rgba(31,78,120,0.12);}
   .list-row textarea::placeholder{ color:var(--muted); opacity:0.75; }
   .row-remove{
-    background:#fff;
+    background:var(--surface);
     border:1.5px solid var(--line);
     color:var(--danger);
     border-radius:6px;
@@ -776,6 +957,14 @@
   }
   .row-remove:hover{background:var(--danger); border-color:var(--danger); color:#fff;}
 
+  .table-scroll{
+    overflow-x:auto;
+    -webkit-overflow-scrolling:touch;
+    scrollbar-width:thin;
+  }
+  .table-scroll::-webkit-scrollbar{ height:6px; }
+  .table-scroll::-webkit-scrollbar-thumb{ background:var(--line); border-radius:3px; }
+
   table{
     width:100%;
     border-collapse:separate;
@@ -785,6 +974,15 @@
     border-radius:6px;
     overflow:hidden;
   }
+  .actions-table{ min-width:800px; }
+  .actions-table th:nth-child(1){ min-width:170px; }
+  .actions-table th:nth-child(2){ min-width:170px; }
+  .actions-table th:nth-child(3){ min-width:170px; }
+  .actions-table th:nth-child(4){ min-width:150px; }
+  .actions-table th:nth-child(5){ min-width:140px; }
+  .log-table{ min-width:520px; }
+  .log-table th:nth-child(2){ min-width:220px; }
+  .log-table th:nth-child(3){ min-width:180px; }
   thead th{
     background:var(--navy);
     color:#fff;
@@ -802,23 +1000,37 @@
     border-right:1px solid var(--line);
     padding:2px;
     vertical-align:top;
-    background:#fff;
+    background:var(--surface);
   }
   tbody tr:last-child td{ border-bottom:none; }
   tbody td:last-child{ border-right:none; }
   tbody input, tbody textarea{
     width:100%;
-    border:none;
-    background:transparent;
+    border:1.5px solid var(--line);
+    background:var(--surface-alt);
     font-family:var(--font-ui);
     font-size:12.5px;
     padding:8px;
     color:var(--ink);
-    border-radius:4px;
+    border-radius:6px;
+    text-align:left;
   }
-  tbody input:focus, tbody textarea:focus{outline:none; background:#EEF4FA; box-shadow:inset 0 0 0 1.5px var(--navy);}
+  /* Uniform, single-line-height cells by default; a cell grows to fit
+     its full content only once it's focused (tapped/clicked), then
+     settles back to the uniform height on blur. Purely visual — the
+     value/data underneath is unchanged either way. */
+  tbody textarea{
+    max-height:38px;
+    overflow:hidden;
+    resize:none;
+    transition:max-height .18s ease;
+  }
+  tbody textarea:focus{
+    overflow:auto;
+  }
+  tbody input:focus, tbody textarea:focus{outline:none; background:var(--surface-focus); box-shadow:inset 0 0 0 1.5px var(--navy); border-color:var(--navy);}
   tbody input::placeholder, tbody textarea::placeholder{ color:var(--muted); opacity:0.7; }
-  tbody tr:nth-child(even) td{background:#F7F9FB;}
+  tbody tr:nth-child(even) td{background:var(--surface-alt);}
   tbody input[type="date"], tbody input[type="time"]{
     cursor:pointer;
     color:var(--ink);
@@ -836,19 +1048,31 @@
     align-items:center;
     gap:6px;
     width:100%;
-    background:#F3F6F9;
+    background:var(--surface-alt);
     border:1.5px solid var(--line);
     border-radius:6px;
-    padding:7px 9px;
+    padding:7px 26px 7px 9px;
     font-family:var(--font-ui);
     font-size:12px;
     color:var(--muted);
     cursor:pointer;
-    transition:border-color .15s ease, background .15s ease, color .15s ease;
+    position:relative;
+    transition:border-color .15s ease, background .15s ease, color .15s ease, box-shadow .15s ease;
   }
-  .pill-btn:hover{ border-color:var(--navy); background:#fff; }
-  .pill-btn.has-value{ color:var(--ink); font-weight:500; background:#fff; }
-  .pill-icon{ display:flex; align-items:center; color:var(--navy); flex-shrink:0; }
+  .pill-btn::after{
+    content:"";
+    position:absolute;
+    right:9px; top:50%;
+    width:7px; height:7px;
+    border-right:1.6px solid var(--muted);
+    border-bottom:1.6px solid var(--muted);
+    transform:translateY(-65%) rotate(45deg);
+    transition:border-color .15s ease;
+  }
+  .pill-btn:hover{ border-color:var(--navy); background:var(--surface); box-shadow:0 2px 8px rgba(31,78,120,0.1); }
+  .pill-btn:hover::after{ border-color:var(--navy); }
+  .pill-btn.has-value{ color:var(--ink); font-weight:500; background:var(--surface); }
+  .pill-icon{ display:flex; align-items:center; color:var(--accent-text); flex-shrink:0; }
   .pill-text{
     overflow:hidden;
     text-overflow:ellipsis;
@@ -861,7 +1085,7 @@
     border-radius:6px;
     font-family:var(--font-ui);
     font-size:12px;
-    background:#fff;
+    background:var(--surface);
     box-shadow:0 0 0 3px rgba(31,78,120,0.12);
   }
   .pill-input:focus{ outline:none; }
@@ -872,22 +1096,29 @@
     border:1.5px solid var(--navy);
     border-radius:6px;
     padding:5px 6px;
-    background:#fff;
+    background:var(--surface);
     box-shadow:0 0 0 3px rgba(31,78,120,0.12);
   }
   .time-select{
     flex:1;
     min-width:0;
+    max-width:56px;
+    box-sizing:border-box;
     border:1.5px solid var(--line);
     border-radius:5px;
     padding:6px 4px;
     font-family:var(--font-ui);
     font-size:12.5px;
-    background:#fff;
+    background:var(--surface);
     color:var(--ink);
-    cursor:pointer;
+    cursor:text;
+    appearance:none;
+    -webkit-appearance:none;
+    text-align:left;
+    transition:border-color .15s ease, box-shadow .15s ease, background-color .15s ease;
   }
-  .time-select:focus{ outline:none; border-color:var(--navy); }
+  .time-select:hover{ border-color:var(--navy); background-color:var(--surface-focus); }
+  .time-select:focus{ outline:none; border-color:var(--navy); box-shadow:0 0 0 3px rgba(31,78,120,0.14); }
   .time-sep{ font-weight:700; color:var(--muted); flex-shrink:0; }
   .time-done-btn{
     background:var(--good);
@@ -906,11 +1137,11 @@
   .date-edit-row{
     display:flex;
     align-items:center;
-    gap:4px;
+    gap:3px;
     border:1.5px solid var(--navy);
     border-radius:6px;
-    padding:5px 6px;
-    background:#fff;
+    padding:5px 4px;
+    background:var(--surface);
     box-shadow:0 0 0 3px rgba(31,78,120,0.12);
     flex-wrap:wrap;
   }
@@ -918,50 +1149,105 @@
     min-width:0;
     border:1.5px solid var(--line);
     border-radius:5px;
-    padding:6px 3px;
+    padding:6px 2px;
     font-family:var(--font-ui);
-    font-size:11.5px;
-    background:#fff;
+    font-size:11px;
+    background:var(--surface);
     color:var(--ink);
-    cursor:pointer;
+    cursor:text;
+    appearance:none;
+    -webkit-appearance:none;
+    text-align:left;
+    transition:border-color .15s ease, box-shadow .15s ease, background-color .15s ease;
   }
-  .date-select:focus{ outline:none; border-color:var(--navy); }
-  .date-select-month{ flex:1.4; }
-  .date-select-day{ flex:0.8; }
-  .date-select-year{ flex:1.1; }
+  .date-select:hover{ border-color:var(--navy); background-color:var(--surface-focus); }
+  .date-select:focus{ outline:none; border-color:var(--navy); box-shadow:0 0 0 3px rgba(31,78,120,0.14); }
+  .date-select-month{ flex:0 0 46px !important; width:46px !important; max-width:46px !important; min-width:0 !important; box-sizing:border-box !important; }
+  .date-select-day{ flex:0 0 46px !important; width:46px !important; max-width:46px !important; min-width:0 !important; box-sizing:border-box !important; }
+  .date-select-year{ flex:0 0 46px !important; width:46px !important; max-width:46px !important; min-width:0 !important; box-sizing:border-box !important; }
   .status-cell{
     padding:8px;
-    min-width:132px;
+    min-width:150px;
+    position:relative;
   }
   .status-pill{ justify-content:flex-start; }
   .status-pill.status-not-started{ color:var(--muted); }
   .status-pill.status-in-progress{ color:var(--amber-dark); }
   .status-pill.status-finished{ color:var(--good); }
+  .status-pill.has-value.status-not-started{ background:#EEF0F2; border-color:#C7CFD6; }
+  .status-pill.has-value.status-in-progress{ background:#FEF3DF; border-color:#F0C264; }
+  .status-pill.has-value.status-finished{ background:#E5F5EB; border-color:#8FCBA6; }
+  html[data-theme="dark"] .status-pill.has-value.status-not-started{ background:#262B30; border-color:#3A4148; }
+  html[data-theme="dark"] .status-pill.has-value.status-in-progress{ background:#3A2E10; border-color:#B98A2E; }
+  html[data-theme="dark"] .status-pill.has-value.status-finished{ background:#163625; border-color:#3F7D57; }
   .status-options{
     display:flex;
     flex-direction:column;
-    gap:7px;
+    gap:4px;
+    background:var(--surface);
+    border:1.5px solid var(--line);
+    border-radius:10px;
+    padding:6px;
+    box-shadow:0 10px 28px rgba(20,30,45,0.16), 0 2px 6px rgba(20,30,45,0.08);
+    animation:statusPopIn .14s ease;
+  }
+  @keyframes statusPopIn{
+    from{ opacity:0; transform:translateY(-4px) scale(0.98); }
+    to{ opacity:1; transform:translateY(0) scale(1); }
   }
   .status-opt{
+    position:relative;
     display:flex;
     align-items:center;
-    gap:7px;
-    font-size:12px;
+    gap:8px;
+    font-size:12.5px;
+    font-weight:500;
     color:var(--ink);
     cursor:pointer;
+    padding:8px 10px 8px 9px;
+    border-radius:7px;
+    border:1.5px solid transparent;
+    transition:background .13s ease, border-color .13s ease, transform .1s ease;
   }
+  .status-opt:hover{ background:var(--surface-alt); transform:translateX(1px); }
   .status-opt input[type="checkbox"]{
-    width:15px;
-    height:15px;
+    position:absolute;
+    opacity:0;
+    width:0; height:0;
+    pointer-events:none;
+  }
+  .status-dot{
+    width:10px; height:10px;
+    border-radius:50%;
     flex-shrink:0;
-    accent-color:var(--good);
-    cursor:pointer;
+    background:var(--muted);
+    box-shadow:0 0 0 3px rgba(101,113,124,0.14);
+    transition:box-shadow .13s ease;
+  }
+  .status-opt-in-progress .status-dot{ background:var(--amber); box-shadow:0 0 0 3px rgba(242,164,19,0.16); }
+  .status-opt-finished .status-dot{ background:var(--good); box-shadow:0 0 0 3px rgba(46,125,79,0.16); }
+  .status-opt-text{ flex:1; }
+  .status-check{
+    font-size:12px;
+    color:var(--good);
+    opacity:0;
+    transform:scale(0.6);
+    transition:opacity .13s ease, transform .13s ease;
   }
   .status-opt:has(input:checked){
+    background:var(--surface-alt);
+    border-color:var(--line);
     font-weight:600;
-    color:var(--good);
   }
+  .status-opt-not-started:has(input:checked){ background:#EEF0F2; border-color:#C7CFD6; }
+  .status-opt-in-progress:has(input:checked){ background:#FEF3DF; border-color:#F0C264; color:var(--amber-dark); }
+  .status-opt-finished:has(input:checked){ background:#E5F5EB; border-color:#8FCBA6; color:var(--good); }
+  html[data-theme="dark"] .status-opt-not-started:has(input:checked){ background:#262B30; border-color:#3A4148; }
+  html[data-theme="dark"] .status-opt-in-progress:has(input:checked){ background:#3A2E10; border-color:#B98A2E; color:var(--amber-dark); }
+  html[data-theme="dark"] .status-opt-finished:has(input:checked){ background:#163625; border-color:#3F7D57; color:var(--good); }
+  .status-opt:has(input:checked) .status-check{ opacity:1; transform:scale(1); }
   .col-remove{width:34px; text-align:center;}
+  .row-toggle-cell{ display:none; }
 
   .empty-hint{
     font-size:12px;
@@ -971,10 +1257,33 @@
   }
 
   @media print{
-    .sidebar, .menu-toggle, .sidebar-overlay, .newplan-btn, .myplans-toolbar, .add-btn, .row-remove, .col-remove{display:none !important;}
-    .main-content{ margin-left:0; }
-    body{background:#fff;}
-    .board{border:none; margin:0;}
+    .sidebar, .menu-toggle, .sidebar-overlay, .newplan-btn, .myplans-toolbar,
+    .add-btn, .row-remove, .col-remove, .row-toggle-cell, .top-account-bar,
+    .feedback-fab, .feedback-overlay{
+      display:none !important;
+    }
+    .main-content{ margin-left:0; padding:0 !important; }
+    #view-home{ margin:0 !important; padding:0 !important; }
+
+    /* Reset the graph-paper grid background so it doesn't print on every page,
+       and force light-theme colors so a dark-mode session still prints legibly */
+    html{ --ink:#20272F; --muted:#65717C; --line:#D3D9E0; --surface:#fff; --surface-alt:#F3F6F9; --paper:#fff; }
+    body{ background:#fff !important; color:#20272F !important; }
+    .board{ border:none; margin:0; box-shadow:none; border-radius:0; }
+
+    /* Undo the tablet scroll wrapper and the mobile accordion stacking —
+       force tables back into real table grid display regardless of what
+       width the print engine resolves the page against */
+    .table-scroll{ overflow:visible !important; }
+    table{ display:table !important; table-layout:fixed !important; width:100% !important; min-width:0 !important; }
+    thead{ display:table-header-group !important; }
+    tbody{ display:table-row-group !important; }
+    tr{ display:table-row !important; border:none !important; padding-right:0 !important; margin-bottom:0 !important; }
+    th, td{ display:table-cell !important; }
+    tbody td.cell-secondary{ display:table-cell !important; }
+    tbody td::before{ content:none !important; }
+    .actions-table, .log-table,
+    .actions-table th, .log-table th{ min-width:0 !important; }
   }
 
   /* ---------- Responsive: tablet & phone ---------- */
@@ -990,15 +1299,66 @@
       margin-left:0;
       padding:76px 16px 40px 16px;
     }
-    #view-home{ margin:-76px -16px 0 -16px; padding:76px 16px 40px 16px; }
+    #view-home{ margin:-76px -16px -40px -16px; padding:76px 16px 40px 16px; }
+    .myplans-toolbar{
+      top:62px;
+      margin:-14px -16px 20px -16px;
+      padding:14px 16px;
+      flex-wrap:nowrap;
+      overflow-x:auto;
+    }
   }
 
   @media (max-width:700px){
+    /* Force the card layout to the device's actual width — without this,
+       the tables' desktop min-width (800px / 520px) survives into block
+       layout and drags the toggle bar off-screen to the right, forcing a
+       horizontal scroll just to find it. */
+    .table-scroll{ overflow-x:visible !important; }
     table, thead, tbody, th, td, tr{display:block;}
+    table{ width:100% !important; min-width:0 !important; }
     thead{display:none;}
-    tbody tr{margin-bottom:10px; border:1px solid var(--line);}
-    tbody td{display:flex; align-items:center; gap:6px;}
+    tbody tr{
+      margin-bottom:10px;
+      border:1px solid var(--line);
+      border-radius:6px;
+      position:relative;
+      overflow:hidden; /* keep the full-width toggle bar's corners clipped to the card */
+    }
+    tbody td{display:flex; align-items:center; gap:6px; padding:9px 10px;}
     tbody td::before{content: attr(data-label); font-weight:bold; font-size:11px; color:var(--muted); width:90px; flex-shrink:0;}
+    /* The value box (whatever it is — plain input, textarea, or one of
+       the custom range/status widgets) needs to actually grow to fill
+       the row instead of keeping its desktop fixed/min width. Without
+       this it can end up narrower than the row and look like it's
+       floating instead of sitting flush-left next to the label. */
+    tbody td > input,
+    tbody td > textarea{
+      flex:1 1 auto;
+      min-width:0;
+      width:auto;
+      text-align:left;
+    }
+    /* Duration/Time of Day (.range-cell) and Status (.status-cell) keep
+       their natural, content-fit width instead of stretching to fill
+       the row — flexbox's default packing puts them immediately after
+       the label, so they stay compact AND left-aligned. */
+    tbody td > .range-cell,
+    tbody td > .status-cell,
+    tbody td > .pill-field{
+      flex:none !important;
+      width:auto !important;
+      min-width:0 !important;
+      padding:0 !important;
+      text-align:left;
+    }
+    /* All fields show by default now — nothing is tucked behind a tap. */
+    tbody td.cell-secondary{ display:flex; }
+    tbody td.col-remove{ padding-top:0; }
+
+    /* The old "show more" toggle bar is no longer needed since every
+       field is already visible; keep it out of the layout. */
+    .row-toggle-cell{ display:none !important; }
     .home-hero{ padding:38px 24px; }
   }
 </style>
@@ -1009,6 +1369,9 @@
 <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebarMobile()"></div>
 
 <div class="top-account-bar">
+  <button id="themeToggleBtn" class="theme-toggle-btn" onclick="toggleTheme()" title="Switch theme" aria-label="Switch light/dark theme">
+    <span id="themeIcon"></span>
+  </button>
   <button id="signInBtnTop" onclick="signIn()"><span class="g-badge">G</span><span class="full-label">Sign in</span></button>
   <div id="userInfoTop">
     <div class="who"><span class="cloud-dot" id="cloudDotTop"></span><span id="userEmailTop"></span></div>
@@ -1066,21 +1429,21 @@
         <p class="home-eyebrow">Vision &middot; Motive &middot; Action &middot; Adjustment</p>
         <h1 class="home-title">Turn your vision<br>into motion.</h1>
         <p class="home-sub">Every summit starts as a plan on paper. Write down what you're building, why it has to happen, and the exact steps that get you there &mdash; then track every course correction along the way.</p>
-        <button class="add-btn amber home-cta" onclick="handleNav('newplan')">+ Start Your First Plan</button>
+        <button class="add-btn amber home-cta" onclick="createPlanDirect()">+ Start Your First Plan</button>
         <p class="home-foot">Free to use &middot; works offline &middot; sync to the cloud whenever you're ready</p>
       </div>
     </div>
 
-    <!-- NEW PLAN (its own page — creating a plan does not jump straight into My Plans) -->
+    <!-- NEW PLAN -->
     <div id="view-newplan" class="view" style="display:none">
-      <div class="home-hero" style="background:#fff; border:1px solid var(--line); box-shadow:var(--shadow-card); backdrop-filter:none; color:var(--ink);">
-        <h1 class="home-title" style="color:var(--navy-dark); text-shadow:none;">Start a new plan</h1>
-        <p class="home-sub" style="color:var(--muted); text-shadow:none;">Give it a name, then build out its vision, motives, actions, and adjustments from the board.</p>
-        <div class="newplan-form">
-          <label for="newPlanTitleInput">Plan Name</label>
-          <input type="text" id="newPlanTitleInput" class="newplan-input" placeholder="e.g. Final Year Project" onkeydown="if(event.key==='Enter'){createPlanFromForm();}">
+      <div class="newplan-wrap">
+        <h1 class="newplan-title">Start a new plan</h1>
+        <p class="newplan-sub">Give it a name, then build out its vision, motives, actions, and adjustments from the board.</p>
+        <div class="newplan-card">
+          <label class="newplan-label" for="newPlanNameInput">PLAN NAME</label>
+          <input type="text" id="newPlanNameInput" class="newplan-input" placeholder="e.g. Final Year Project" onkeydown="if(event.key==='Enter') submitNewPlan();">
           <div class="newplan-actions">
-            <button class="add-btn amber" onclick="createPlanFromForm()">+ Create Plan</button>
+            <button class="add-btn amber" onclick="submitNewPlan()">+ Create Plan</button>
           </div>
         </div>
       </div>
@@ -1111,7 +1474,21 @@
     <!-- SETTINGS -->
     <div id="view-settings" class="view" style="display:none">
       <h2 class="view-title">Settings</h2>
-      <p class="view-desc">Manage how your plans are saved, and how you'd like to be alerted about plan timelines.</p>
+      <p class="view-desc">Manage how your plans are saved, your theme, and how you'd like to be alerted about plan timelines.</p>
+
+      <h3 class="settings-subheading">Appearance</h3>
+      <div class="settings-card" style="margin-bottom:22px;">
+        <label class="settings-toggle-row">
+          <span class="settings-toggle-text">
+            <span class="settings-toggle-title">Dark theme</span>
+            <span class="settings-toggle-desc" id="themeToggleDesc">Switch between a light and dark color scheme.</span>
+          </span>
+          <span class="switch switch-light" title="Switch between light and dark theme">
+            <input type="checkbox" id="themeToggle" onchange="toggleTheme(this.checked)">
+            <span class="switch-slider"></span>
+          </span>
+        </label>
+      </div>
 
       <h3 class="settings-subheading">Autosave</h3>
       <div class="settings-card" style="margin-bottom:22px;">
@@ -1134,30 +1511,30 @@
       </div>
       <div class="settings-card">
         <label class="radio-row">
-          <input type="radio" name="alertMethod" value="none" id="alertNone" onchange="toggleSettingsFields(); autosaveSettings();">
+          <input type="radio" name="alertMethod" value="none" id="alertNone" onchange="toggleSettingsFields(); markSettingsDirty();">
           <span>Don't alert me</span>
         </label>
 
         <label class="radio-row">
-          <input type="radio" name="alertMethod" value="email" id="alertEmail" onchange="toggleSettingsFields(); autosaveSettings();">
+          <input type="radio" name="alertMethod" value="email" id="alertEmail" onchange="toggleSettingsFields(); markSettingsDirty();">
           <span>Alert me by email</span>
         </label>
         <div class="settings-subfield" id="emailField" style="display:none">
-          <input type="email" id="alertEmailInput" placeholder="you@example.com" oninput="autosaveSettings()">
+          <input type="email" id="alertEmailInput" placeholder="you@example.com" oninput="markSettingsDirty();">
         </div>
 
         <label class="radio-row">
-          <input type="radio" name="alertMethod" value="mobile" id="alertMobile" onchange="toggleSettingsFields(); autosaveSettings();">
+          <input type="radio" name="alertMethod" value="mobile" id="alertMobile" onchange="toggleSettingsFields(); markSettingsDirty();">
           <span>Alert me on mobile</span>
         </label>
         <div class="settings-subfield" id="mobileField" style="display:none">
-          <input type="tel" id="alertMobileInput" placeholder="+255 ..." oninput="autosaveSettings()">
+          <input type="tel" id="alertMobileInput" placeholder="+255 ..." oninput="markSettingsDirty();">
         </div>
 
-        <button id="saveSettingsBtn" class="add-btn amber" onclick="manualSaveSettings()" style="margin-top:12px;" title="Your preference already autosaves — this just saves a checkpoint right now.">Save</button>
+        <button id="saveSettingsBtn" class="add-btn amber" onclick="manualSaveSettings()" style="margin-top:12px;" title="Click Save to apply your alert preference.">Save</button>
         <span id="settingsStatus" class="save-status"></span>
 
-        <p class="settings-note">Autosave is on — your alert preference saves automatically. Actually sending alerts on your timelines isn't wired up yet — it needs a small scheduled job to be added separately.</p>
+        <p class="settings-note">Your alert preference only saves when you click Save, to prevent accidental changes.</p>
       </div>
     </div>
 
@@ -1165,6 +1542,42 @@
 </div>
 
 <script>
+// ---------- Theme (light/dark) ----------
+const THEME_KEY = "planBoardTheme";
+const SUN_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="17" height="17"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>';
+const MOON_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="17" height="17"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>';
+
+function setTheme(theme){
+  document.documentElement.setAttribute('data-theme', theme);
+  try{ localStorage.setItem(THEME_KEY, theme); }catch(e){}
+
+  const icon = document.getElementById('themeIcon');
+  if(icon) icon.innerHTML = theme === 'dark' ? SUN_ICON : MOON_ICON;
+
+  const btn = document.getElementById('themeToggleBtn');
+  if(btn) btn.title = theme === 'dark' ? "Switch to light theme" : "Switch to dark theme";
+
+  const settingsToggle = document.getElementById('themeToggle');
+  if(settingsToggle) settingsToggle.checked = (theme === 'dark');
+}
+function toggleTheme(explicitDark){
+  let next;
+  if(typeof explicitDark === 'boolean'){
+    next = explicitDark ? 'dark' : 'light';
+  } else {
+    const current = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+    next = current === 'dark' ? 'light' : 'dark';
+  }
+  setTheme(next);
+}
+(function initTheme(){
+  // The <head> script already set data-theme before first paint to avoid a
+  // flash of the wrong theme; this just syncs the toggle icon/checkbox to it.
+  const current = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+  setTheme(current);
+})();
+window.toggleTheme = toggleTheme;
+
 function uid(){ return 'p' + Math.random().toString(36).slice(2,9); }
 
 function emptyVision(){ return ""; }
@@ -1176,15 +1589,47 @@ function newPlan(title){
   return {
     id: uid(),
     title: title || "Untitled Plan",
-    visions: [emptyVision()],
-    motives: [emptyMotive()],
-    actions: [emptyAction()],
-    log: [emptyLog()]
+    visions: [],
+    motives: [],
+    actions: [],
+    log: []
   };
 }
 
-let plans = [ newPlan("Plan 1") ];
-let activeIndex = 0;
+// Normalizes any plan object to a guaranteed-complete shape. Data saved by
+// an older version of this app (or a corrupted/partial record) can be
+// missing fields entirely — without this, a single bad plan would throw
+// mid-loop while rendering tabs and silently blank out the whole tab strip
+// (including the + New Plan button), since the array is cleared before the
+// loop runs. This runs on every plan coming from local storage, cloud
+// sync, or file import, so the render loop never sees anything unexpected.
+function sanitizePlan(p){
+  if(!p || typeof p !== 'object') p = {};
+  return {
+    id: typeof p.id === 'string' && p.id ? p.id : uid(),
+    title: typeof p.title === 'string' && p.title.trim() ? p.title : "Untitled Plan",
+    visions: Array.isArray(p.visions) ? p.visions.filter(v => typeof v === 'string') : [],
+    motives: Array.isArray(p.motives) ? p.motives.filter(v => typeof v === 'string') : [],
+    actions: Array.isArray(p.actions) ? p.actions.map(a => ({
+      action: (a && a.action) || "",
+      duration: (a && a.duration) || "",
+      time: (a && a.time) || "",
+      resources: (a && a.resources) || "",
+      status: (a && a.status) || ""
+    })) : [],
+    log: Array.isArray(p.log) ? p.log.map(l => ({
+      date: (l && l.date) || "",
+      change: (l && l.change) || "",
+      reason: (l && l.reason) || ""
+    })) : []
+  };
+}
+function sanitizePlansArray(arr){
+  return (Array.isArray(arr) ? arr : []).map(sanitizePlan);
+}
+
+let plans = [];
+let activeIndex = -1;
 let settings = { alertMethod: "none", email: "", mobile: "" };
 
 // ---------- Local persistence (always on, works with or without sign-in) ----------
@@ -1237,11 +1682,10 @@ function saveToStorage(){
 }
 function updateSaveStatus(){
   const el = document.getElementById('saveStatus');
-  const settingsEl = document.getElementById('settingsStatus');
-  [el, settingsEl].forEach(target => {
+  [el].forEach(target => {
     if(!target) return;
     if(!storageAvailable){
-      target.textContent = "Autosave unavailable — use Export to keep your work.";
+      target.textContent = "Save failed — your browser is blocking local storage. Use Export to keep your work.";
       target.className = "save-status warn";
     } else if(!autosaveEnabled){
       target.textContent = hasUnsavedChanges
@@ -1265,7 +1709,7 @@ function updateSaveStatus(){
     if(!storageAvailable){
       dot.className = "dot warn";
       label.textContent = "Autosave failed";
-      detail.textContent = "Can't save locally — use Export to keep your work";
+      detail.textContent = "Browser is blocking local storage — use Export to keep your work";
     } else if(!autosaveEnabled){
       dot.className = "dot off";
       label.textContent = "Autosave is off";
@@ -1296,7 +1740,7 @@ function loadFromStorage(){
     if(!raw) return false;
     const parsed = JSON.parse(raw);
     if(!parsed || !Array.isArray(parsed.plans) || parsed.plans.length===0) return false;
-    plans = parsed.plans;
+    plans = sanitizePlansArray(parsed.plans);
     activeIndex = Math.min(parsed.activeIndex || 0, plans.length - 1);
     if(parsed.settings) settings = Object.assign(settings, parsed.settings);
     return true;
@@ -1304,7 +1748,7 @@ function loadFromStorage(){
 }
 loadFromStorage();
 
-function activePlan(){ return plans[activeIndex]; }
+function activePlan(){ return plans[activeIndex] || null; }
 
 // ---------- View / navigation ----------
 let currentView = 'home';
@@ -1324,26 +1768,38 @@ function showView(view){
   }
 }
 function handleNav(view){
-  if(view === 'newplan'){
-    const input = document.getElementById('newPlanTitleInput');
-    if(input){ input.value = ""; }
-    showView('newplan');
-    if(input) setTimeout(() => input.focus(), 0);
-    return;
-  }
   if(view === 'myplans'){ renderTabs(); renderBoard(); }
   if(view === 'settings'){ renderSettings(); }
+  if(view === 'newplan'){
+    const input = document.getElementById('newPlanNameInput');
+    if(input){
+      input.value = "";
+      showView(view);
+      setTimeout(() => input.focus(), 0);
+      return;
+    }
+  }
   showView(view);
 }
 
-// Creates a plan from the dedicated New Plan page, then hands off to My Plans
-function createPlanFromForm(){
-  const input = document.getElementById('newPlanTitleInput');
+// Reads the name typed on the New Plan page, creates the plan with that
+// name (falling back to an auto-numbered name if left blank, same as
+// every other "New Plan" entry point), then drops the user onto My Plans.
+function submitNewPlan(){
+  const input = document.getElementById('newPlanNameInput');
   const typed = input ? input.value.trim() : "";
   plans.push(newPlan(typed || ("Plan " + (plans.length + 1))));
   activeIndex = plans.length - 1;
-  if(input) input.value = "";
   render();
+  showView('myplans');
+}
+
+// Creates a plan immediately (auto-named) and takes you straight to its
+// board — used by every "New Plan" entry point (sidebar, Home CTA, the
+// empty My Plans state) so they all behave like the tab strip's own
+// + New Plan button.
+function createPlanDirect(){
+  addPlan();
   showView('myplans');
 }
 
@@ -1363,6 +1819,26 @@ function toggleSettingsFields(){
   document.getElementById('emailField').style.display = (val === 'email') ? 'block' : 'none';
   document.getElementById('mobileField').style.display = (val === 'mobile') ? 'block' : 'none';
 }
+let hasUnsavedSettingsChanges = false;
+let lastSettingsSavedAt = null;
+function markSettingsDirty(){
+  hasUnsavedSettingsChanges = true;
+  updateSettingsStatus();
+}
+function updateSettingsStatus(){
+  const el = document.getElementById('settingsStatus');
+  if(!el) return;
+  if(hasUnsavedSettingsChanges){
+    el.textContent = "Unsaved changes — click Save to apply";
+    el.className = "save-status warn";
+  } else if(lastSettingsSavedAt){
+    el.textContent = "\u2713 Saved " + lastSettingsSavedAt.toLocaleTimeString();
+    el.className = "save-status";
+  } else {
+    el.textContent = "";
+    el.className = "save-status";
+  }
+}
 function renderSettings(){
   const radio = document.querySelector('input[name=alertMethod][value="' + settings.alertMethod + '"]');
   if(radio) radio.checked = true;
@@ -1373,6 +1849,8 @@ function renderSettings(){
     if(e) document.getElementById('alertEmailInput').placeholder = e;
   }
   toggleSettingsFields();
+  hasUnsavedSettingsChanges = false;
+  updateSettingsStatus();
 }
 function syncSettingsFromInputs(){
   const checked = document.querySelector('input[name=alertMethod]:checked');
@@ -1380,14 +1858,13 @@ function syncSettingsFromInputs(){
   settings.email = document.getElementById('alertEmailInput').value.trim();
   settings.mobile = document.getElementById('alertMobileInput').value.trim();
 }
-function autosaveSettings(){
-  syncSettingsFromInputs();
-  saveToStorage(); // respects the Autosave on/off preference, same as every other field
-}
 function manualSaveSettings(){
   syncSettingsFromInputs();
   doSave();
   hasUnsavedChanges = false;
+  hasUnsavedSettingsChanges = false;
+  lastSettingsSavedAt = new Date();
+  updateSettingsStatus();
   const btn = document.getElementById('saveSettingsBtn');
   if(!btn) return;
   const original = btn.textContent;
@@ -1402,10 +1879,9 @@ function addPlan(){
   render();
 }
 function removePlan(i){
-  if(plans.length === 1){ alert("At least one plan must remain."); return; }
   if(!confirm("Delete this plan? This cannot be undone.")) return;
   plans.splice(i,1);
-  if(activeIndex >= plans.length) activeIndex = plans.length - 1;
+  activeIndex = plans.length ? Math.min(activeIndex, plans.length - 1) : -1;
   render();
 }
 function switchPlan(i){ activeIndex = i; render(); }
@@ -1418,10 +1894,10 @@ function renamePlan(i){
 }
 
 function addVision(){ activePlan().visions.push(emptyVision()); render(); }
-function removeVision(i){ activePlan().visions.splice(i,1); if(activePlan().visions.length===0) activePlan().visions.push(emptyVision()); render(); }
+function removeVision(i){ activePlan().visions.splice(i,1); render(); }
 
 function addMotive(){ activePlan().motives.push(emptyMotive()); render(); }
-function removeMotive(i){ activePlan().motives.splice(i,1); if(activePlan().motives.length===0) activePlan().motives.push(emptyMotive()); render(); }
+function removeMotive(i){ activePlan().motives.splice(i,1); render(); }
 
 function addAction(){ activePlan().actions.push(emptyAction()); render(); }
 function removeAction(i){ activePlan().actions.splice(i,1); render(); }
@@ -1430,7 +1906,12 @@ function addLog(){ activePlan().log.push(emptyLog()); render(); }
 function removeLog(i){ activePlan().log.splice(i,1); render(); }
 
 // ---------- Field updates (no re-render, so focus/cursor is preserved) ----------
-function updatePlanTitle(v){ activePlan().title = v; document.getElementById('tabs').children[activeIndex].firstChild.textContent = v || "Untitled Plan"; saveToStorage(); }
+function updatePlanTitle(v){
+  activePlan().title = v;
+  const tabEl = document.getElementById('tabs').children[activeIndex];
+  if(tabEl && tabEl.firstChild) tabEl.firstChild.textContent = v || "Untitled Plan";
+  saveToStorage();
+}
 function updateVision(i, v){ activePlan().visions[i] = v; saveToStorage(); }
 function updateMotive(i, v){ activePlan().motives[i] = v; saveToStorage(); }
 function updateAction(i, field, v){ activePlan().actions[i][field] = v; saveToStorage(); }
@@ -1454,7 +1935,7 @@ function importPlans(evt){
     try{
       const parsed = JSON.parse(e.target.result);
       if(!Array.isArray(parsed) || parsed.length===0) throw new Error("bad format");
-      plans = parsed;
+      plans = sanitizePlansArray(parsed);
       activeIndex = 0;
       render();
     }catch(err){
@@ -1490,7 +1971,7 @@ document.addEventListener('keydown', (e) => { if(e.key === 'Escape') closeFileMe
 function getBoardState(){ return { plans, activeIndex, settings }; }
 function setBoardState(data){
   if(!data || !Array.isArray(data.plans) || data.plans.length===0) return;
-  plans = data.plans;
+  plans = sanitizePlansArray(data.plans);
   activeIndex = Math.min(data.activeIndex || 0, plans.length - 1);
   if(data.settings) settings = Object.assign(settings, data.settings);
   render();
@@ -1546,28 +2027,43 @@ function render(){
 
 function renderTabs(){
   const tabs = document.getElementById('tabs');
+  if(!tabs) return;
   tabs.innerHTML = "";
-  plans.forEach((p, i) => {
-    const tab = document.createElement('div');
-    tab.className = "tab" + (i===activeIndex ? " active" : "");
-    const label = document.createElement('span');
-    label.textContent = p.title || "Untitled Plan";
-    tab.appendChild(label);
-    const edit = document.createElement('span');
-    edit.className = "edit-icon";
-    edit.textContent = "\u270E";
-    edit.title = "Edit plan";
-    edit.onclick = (e) => { e.stopPropagation(); renamePlan(i); };
-    tab.appendChild(edit);
-    const close = document.createElement('span');
-    close.className = "close";
-    close.textContent = "\u00D7";
-    close.title = "Delete plan";
-    close.onclick = (e) => { e.stopPropagation(); removePlan(i); };
-    tab.appendChild(close);
-    tab.onclick = () => switchPlan(i);
-    tabs.appendChild(tab);
-  });
+  try{
+    (Array.isArray(plans) ? plans : []).forEach((p, i) => {
+      try{
+        const tab = document.createElement('div');
+        tab.className = "tab" + (i===activeIndex ? " active" : "");
+        const label = document.createElement('span');
+        label.textContent = (p && p.title) || "Untitled Plan";
+        tab.appendChild(label);
+        const edit = document.createElement('span');
+        edit.className = "edit-icon";
+        edit.textContent = "\u270E";
+        edit.title = "Edit plan";
+        edit.onclick = (e) => { e.stopPropagation(); renamePlan(i); };
+        tab.appendChild(edit);
+        const close = document.createElement('span');
+        close.className = "close";
+        close.textContent = "\u00D7";
+        close.title = "Delete plan";
+        close.onclick = (e) => { e.stopPropagation(); removePlan(i); };
+        tab.appendChild(close);
+        tab.onclick = () => switchPlan(i);
+        tabs.appendChild(tab);
+      }catch(err){
+        // One malformed plan should never take down the whole tab strip —
+        // log it and keep going so every other tab (and + New Plan) still shows.
+        console.error("Failed to render tab for plan index " + i, err);
+      }
+    });
+  }catch(err){
+    // Even if `plans` itself is somehow not a proper array, or something
+    // else entirely unexpected happens, that must never take the
+    // + New Plan button down with it — log it and fall through.
+    console.error("renderTabs failed unexpectedly", err);
+  }
+
   const newBtn = document.createElement('div');
   newBtn.className = "newplan-btn";
   newBtn.textContent = "+ New Plan";
@@ -1577,8 +2073,26 @@ function renderTabs(){
 
 function renderBoard(){
   const board = document.getElementById('board');
-  const p = activePlan();
   board.innerHTML = "";
+
+  if(plans.length === 0){
+    const empty = document.createElement('div');
+    empty.className = "empty-plans-state";
+    empty.innerHTML = `
+      <h2>You have no plan yet</h2>
+      <p>Create a plan to start mapping out its vision, motives, actions, and adjustments.</p>
+    `;
+    const cta = document.createElement('button');
+    cta.className = "add-btn amber";
+    cta.textContent = "+ Start Your First Plan";
+    cta.onclick = () => createPlanDirect();
+    empty.appendChild(cta);
+    board.appendChild(empty);
+    updateSaveStatus();
+    return;
+  }
+
+  const p = activePlan();
 
   // Title
   const titleRow = document.createElement('div');
@@ -1658,6 +2172,7 @@ function buildActionsSection(actions){
   section.appendChild(head);
 
   const table = document.createElement('table');
+  table.className = "actions-table";
   table.innerHTML = `<thead><tr>
     <th>Action</th><th>Duration</th><th>Time of day</th><th>Resources required</th><th>Status</th><th></th>
   </tr></thead>`;
@@ -1666,11 +2181,27 @@ function buildActionsSection(actions){
   actions.forEach((a, i) => {
     const tr = document.createElement('tr');
 
-    tr.appendChild(makeCell(a.action, "Action", (v)=>updateAction(i,'action',v), true));
-    tr.appendChild(makeDateRangeCell(a.duration, "Duration", (v)=>updateAction(i,'duration',v)));
-    tr.appendChild(makeTimeRangeCell(a.time, "Time of Day", (v)=>updateAction(i,'time',v)));
-    tr.appendChild(makeCell(a.resources, "Resources", (v)=>updateAction(i,'resources',v), true));
-    tr.appendChild(makeStatusCell(a.status, "Status", (v)=>updateAction(i,'status',v)));
+    const actionTd = makeCell(a.action, "Action", (v)=>updateAction(i,'action',v), true);
+    actionTd.classList.add('cell-primary');
+    tr.appendChild(actionTd);
+
+    const durationTd = makeDateRangeCell(a.duration, "Duration", (v)=>updateAction(i,'duration',v));
+    durationTd.classList.add('cell-secondary');
+    tr.appendChild(durationTd);
+
+    const timeTd = makeTimeRangeCell(a.time, "Time of Day", (v)=>updateAction(i,'time',v));
+    timeTd.classList.add('cell-secondary');
+    tr.appendChild(timeTd);
+
+    const resourcesTd = makeCell(a.resources, "Resources", (v)=>updateAction(i,'resources',v), true);
+    resourcesTd.classList.add('cell-secondary');
+    tr.appendChild(resourcesTd);
+
+    const statusTd = makeStatusCell(a.status, "Status", (v)=>updateAction(i,'status',v));
+    statusTd.classList.add('cell-primary');
+    tr.appendChild(statusTd);
+
+    tr.appendChild(createRowToggle(["Duration", "Time of day", "Resources required"]));
 
     const tdRm = document.createElement('td');
     tdRm.className = "col-remove";
@@ -1685,7 +2216,10 @@ function buildActionsSection(actions){
   });
 
   table.appendChild(tbody);
-  section.appendChild(table);
+  const scrollWrap = document.createElement('div');
+  scrollWrap.className = "table-scroll";
+  scrollWrap.appendChild(table);
+  section.appendChild(scrollWrap);
   return section;
 }
 
@@ -1703,14 +2237,26 @@ function buildLogSection(log){
   section.appendChild(head);
 
   const table = document.createElement('table');
+  table.className = "log-table";
   table.innerHTML = `<thead><tr><th style="width:110px;">Date</th><th>Change Made</th><th>Reason</th><th></th></tr></thead>`;
   const tbody = document.createElement('tbody');
 
   log.forEach((entry, i) => {
     const tr = document.createElement('tr');
-    tr.appendChild(makeDateCell(entry.date, "Date", (v)=>updateLog(i,'date',v)));
-    tr.appendChild(makeCell(entry.change, "Change Made", (v)=>updateLog(i,'change',v), true));
-    tr.appendChild(makeCell(entry.reason, "Reason", (v)=>updateLog(i,'reason',v), true));
+
+    const dateTd = makeDateCell(entry.date, "Date", (v)=>updateLog(i,'date',v));
+    dateTd.classList.add('cell-primary');
+    tr.appendChild(dateTd);
+
+    const changeTd = makeCell(entry.change, "Change Made", (v)=>updateLog(i,'change',v), true);
+    changeTd.classList.add('cell-primary');
+    tr.appendChild(changeTd);
+
+    const reasonTd = makeCell(entry.reason, "Reason", (v)=>updateLog(i,'reason',v), true);
+    reasonTd.classList.add('cell-secondary');
+    tr.appendChild(reasonTd);
+
+    tr.appendChild(createRowToggle(["Reason"]));
 
     const tdRm = document.createElement('td');
     tdRm.className = "col-remove";
@@ -1725,8 +2271,47 @@ function buildLogSection(log){
   });
 
   table.appendChild(tbody);
-  section.appendChild(table);
+  const scrollWrap = document.createElement('div');
+  scrollWrap.className = "table-scroll";
+  scrollWrap.appendChild(table);
+  section.appendChild(scrollWrap);
   return section;
+}
+
+// Builds the mobile-only "Show N more fields" bar for a row's hidden
+// (cell-secondary) columns. On screens above 700px this cell stays
+// display:none, so it never affects desktop/tablet layout.
+function createRowToggle(hiddenFieldNames){
+  const tdToggle = document.createElement('td');
+  tdToggle.className = "row-toggle-cell";
+
+  const toggleBtn = document.createElement('button');
+  toggleBtn.type = "button";
+  toggleBtn.className = "row-toggle-btn";
+
+  const count = hiddenFieldNames.length;
+  const showText = "Show " + count + " more field" + (count === 1 ? "" : "s");
+  const hideText = "Hide extra fields";
+
+  const label = document.createElement('span');
+  label.className = "toggle-label";
+  label.textContent = showText;
+  const chev = document.createElement('span');
+  chev.className = "chev";
+  chev.textContent = "\u2304";
+  toggleBtn.appendChild(label);
+  toggleBtn.appendChild(chev);
+  toggleBtn.setAttribute('aria-label', showText + ": " + hiddenFieldNames.join(", "));
+
+  toggleBtn.onclick = () => {
+    const tr = tdToggle.closest('tr');
+    const expanded = tr.classList.toggle('row-expanded');
+    label.textContent = expanded ? hideText : showText;
+    toggleBtn.setAttribute('aria-label', expanded ? hideText : showText + ": " + hiddenFieldNames.join(", "));
+  };
+
+  tdToggle.appendChild(toggleBtn);
+  return tdToggle;
 }
 
 function isISODate(s){ return /^\d{4}-\d{2}-\d{2}$/.test(s || ""); }
@@ -1777,13 +2362,25 @@ function makeDateSelectField({value, label, onChange, getMin}){
   const [y0, m0, d0] = parts;
   const nowYear = new Date().getFullYear();
 
-  const monthSel = document.createElement('select');
+  const monthSel = document.createElement('input');
+  monthSel.type = "text";
+  monthSel.inputMode = "numeric";
+  monthSel.maxLength = 2;
+  monthSel.placeholder = "MM";
   monthSel.className = "date-select date-select-month";
 
-  const daySel = document.createElement('select');
+  const daySel = document.createElement('input');
+  daySel.type = "text";
+  daySel.inputMode = "numeric";
+  daySel.maxLength = 2;
+  daySel.placeholder = "DD";
   daySel.className = "date-select date-select-day";
 
-  const yearSel = document.createElement('select');
+  const yearSel = document.createElement('input');
+  yearSel.type = "text";
+  yearSel.inputMode = "numeric";
+  yearSel.maxLength = 4;
+  yearSel.placeholder = "YYYY";
   yearSel.className = "date-select date-select-year";
 
   function minParts(){
@@ -1792,49 +2389,57 @@ function makeDateSelectField({value, label, onChange, getMin}){
     return isISODate(m) ? m.split('-').map(Number) : null; // [y,m,d]
   }
 
+  function clampNum(str, lo, hi){
+    if(str === "") return "";
+    let n = parseInt(str, 10);
+    if(isNaN(n)) return "";
+    n = Math.max(lo, Math.min(hi, n));
+    return n;
+  }
+
+  // Sanitize as the person types: digits only, respect maxlength.
+  function sanitizeDigits(el){
+    el.value = el.value.replace(/[^0-9]/g, '').slice(0, el.maxLength);
+  }
+
   function populateYears(preferred){
-    const min = minParts();
-    const keep = preferred !== undefined ? preferred : yearSel.value;
-    yearSel.innerHTML = "";
-    yearSel.appendChild(new Option("Year", ""));
-    for(let y = nowYear - 2; y <= nowYear + 8; y++){
-      if(min && y < min[0]) continue;
-      yearSel.appendChild(new Option(String(y), String(y)));
-    }
-    yearSel.value = [...yearSel.options].some(o => o.value === keep) ? keep : "";
+    if(preferred !== undefined) yearSel.value = preferred || "";
   }
-
   function populateMonths(preferred){
-    const min = minParts();
-    const keep = preferred !== undefined ? preferred : monthSel.value;
-    const curYear = yearSel.value ? Number(yearSel.value) : null;
-    const restrictFrom = (min && curYear === min[0]) ? min[1] : null;
-    monthSel.innerHTML = "";
-    monthSel.appendChild(new Option("Month", ""));
-    MONTH_NAMES.forEach((name, idx) => {
-      const mm = idx + 1;
-      if(restrictFrom !== null && mm < restrictFrom) return;
-      monthSel.appendChild(new Option(name, pad2(mm)));
-    });
-    monthSel.value = [...monthSel.options].some(o => o.value === keep) ? keep : "";
+    if(preferred !== undefined) monthSel.value = preferred || "";
+  }
+  function populateDays(preferred){
+    if(preferred !== undefined) daySel.value = preferred || "";
   }
 
-  function populateDays(preferred){
+  // On blur, clamp/pad each field to a valid value and enforce the
+  // paired min-date constraint (used by a "To" field against "From").
+  function finalizeDate(){
     const min = minParts();
-    const keepDay = preferred !== undefined ? preferred : daySel.value;
-    const y = yearSel.value ? Number(yearSel.value) : nowYear;
-    const m = monthSel.value ? Number(monthSel.value) : 1;
-    const total = daysInMonth(y, m);
-    const curYear = yearSel.value ? Number(yearSel.value) : null;
-    const curMonth = monthSel.value ? Number(monthSel.value) : null;
-    const restrictFrom = (min && curYear === min[0] && curMonth === min[1]) ? min[2] : null;
-    daySel.innerHTML = "";
-    daySel.appendChild(new Option("Day", ""));
-    for(let d = 1; d <= total; d++){
-      if(restrictFrom !== null && d < restrictFrom) continue;
-      daySel.appendChild(new Option(pad2(d), pad2(d)));
+    const y = clampNum(yearSel.value, nowYear - 2, nowYear + 8);
+    yearSel.value = y === "" ? "" : String(y);
+
+    let m = clampNum(monthSel.value, 1, 12);
+    monthSel.value = m === "" ? "" : pad2(m);
+
+    const yForDays = yearSel.value ? Number(yearSel.value) : nowYear;
+    const mForDays = monthSel.value ? Number(monthSel.value) : 1;
+    let d = clampNum(daySel.value, 1, daysInMonth(yForDays, mForDays));
+    daySel.value = d === "" ? "" : pad2(d);
+
+    // Enforce min-date: if the fully-entered date is earlier than the
+    // paired constraint, bump it up to the minimum allowed date.
+    if(min && yearSel.value && monthSel.value && daySel.value){
+      const cur = [Number(yearSel.value), Number(monthSel.value), Number(daySel.value)];
+      const before = cur[0] < min[0] ||
+        (cur[0] === min[0] && cur[1] < min[1]) ||
+        (cur[0] === min[0] && cur[1] === min[1] && cur[2] < min[2]);
+      if(before){
+        yearSel.value = String(min[0]);
+        monthSel.value = pad2(min[1]);
+        daySel.value = pad2(min[2]);
+      }
     }
-    daySel.value = [...daySel.options].some(o => o.value === keepDay) ? keepDay : "";
   }
 
   populateYears(y0 ? String(y0) : "");
@@ -1858,9 +2463,19 @@ function makeDateSelectField({value, label, onChange, getMin}){
   refreshPill();
 
   function emit(){ onChange(currentValue()); refreshPill(); }
-  monthSel.onchange = () => { populateDays(); emit(); };
-  yearSel.onchange = () => { populateMonths(); populateDays(); emit(); };
-  daySel.onchange = emit;
+
+  function onFieldInput(el, next){
+    sanitizeDigits(el);
+    if(el.value.length === el.maxLength && next) next.focus();
+  }
+  monthSel.oninput = () => onFieldInput(monthSel, daySel);
+  daySel.oninput = () => onFieldInput(daySel, yearSel);
+  yearSel.oninput = () => onFieldInput(yearSel, null);
+
+  function onFieldBlur(){ finalizeDate(); emit(); }
+  monthSel.onblur = onFieldBlur;
+  daySel.onblur = onFieldBlur;
+  yearSel.onblur = onFieldBlur;
 
   function openEditor(){ pill.style.display = "none"; editRow.style.display = "flex"; }
   function closeEditor(){ editRow.style.display = "none"; pill.style.display = "flex"; }
@@ -1877,12 +2492,10 @@ function makeDateSelectField({value, label, onChange, getMin}){
   wrap.appendChild(editRow);
 
   // Called by a paired "From" field when its value changes, so this "To"
-  // field's option lists (and current value, if it's now invalid) update.
+  // field's current value re-validates against the new minimum.
   wrap.refreshMinConstraint = function(){
     const before = currentValue();
-    populateYears();
-    populateMonths();
-    populateDays();
+    finalizeDate();
     if(currentValue() !== before) emit(); else refreshPill();
   };
 
@@ -1945,10 +2558,18 @@ function makeTimeSelectField({value, label, onChange, getMin}){
 
   const [h0, m0] = isHHMM(value) ? value.split(':') : ["", ""];
 
-  const hourSel = document.createElement('select');
+  const hourSel = document.createElement('input');
+  hourSel.type = "text";
+  hourSel.inputMode = "numeric";
+  hourSel.maxLength = 2;
+  hourSel.placeholder = "HH";
   hourSel.className = "time-select";
 
-  const minSel = document.createElement('select');
+  const minSel = document.createElement('input');
+  minSel.type = "text";
+  minSel.inputMode = "numeric";
+  minSel.maxLength = 2;
+  minSel.placeholder = "MM";
   minSel.className = "time-select";
 
   function minParts(){
@@ -1957,31 +2578,41 @@ function makeTimeSelectField({value, label, onChange, getMin}){
     return isHHMM(m) ? m.split(':') : null; // ["HH","MM"] as zero-padded strings
   }
 
-  function populateHours(preferred){
-    const min = minParts();
-    const keep = preferred !== undefined ? preferred : hourSel.value;
-    hourSel.innerHTML = "";
-    hourSel.appendChild(new Option("Hr", ""));
-    for(let h=0; h<24; h++){
-      const hs = pad2(h);
-      if(min && hs < min[0]) continue;
-      hourSel.appendChild(new Option(hs, hs));
-    }
-    hourSel.value = [...hourSel.options].some(o => o.value === keep) ? keep : "";
+  function clampNum(str, lo, hi){
+    if(str === "") return "";
+    let n = parseInt(str, 10);
+    if(isNaN(n)) return "";
+    n = Math.max(lo, Math.min(hi, n));
+    return n;
   }
 
+  function sanitizeDigits(el){
+    el.value = el.value.replace(/[^0-9]/g, '').slice(0, el.maxLength);
+  }
+
+  function populateHours(preferred){
+    if(preferred !== undefined) hourSel.value = preferred || "";
+  }
   function populateMinutes(preferred){
+    if(preferred !== undefined) minSel.value = preferred || "";
+  }
+
+  // On blur, clamp/pad each field and enforce the paired min-time
+  // constraint (used by a "To" field against "From").
+  function finalizeTime(){
     const min = minParts();
-    const keep = preferred !== undefined ? preferred : minSel.value;
-    const restrictFrom = (min && hourSel.value === min[0]) ? min[1] : null;
-    minSel.innerHTML = "";
-    minSel.appendChild(new Option("Min", ""));
-    for(let m=0; m<60; m++){
-      const ms = pad2(m);
-      if(restrictFrom !== null && ms < restrictFrom) continue;
-      minSel.appendChild(new Option(ms, ms));
+    let h = clampNum(hourSel.value, 0, 23);
+    hourSel.value = h === "" ? "" : pad2(h);
+    let m = clampNum(minSel.value, 0, 59);
+    minSel.value = m === "" ? "" : pad2(m);
+
+    if(min && hourSel.value && minSel.value){
+      const before = hourSel.value < min[0] || (hourSel.value === min[0] && minSel.value < min[1]);
+      if(before){
+        hourSel.value = min[0];
+        minSel.value = min[1];
+      }
     }
-    minSel.value = [...minSel.options].some(o => o.value === keep) ? keep : "";
   }
 
   populateHours(h0);
@@ -2008,8 +2639,17 @@ function makeTimeSelectField({value, label, onChange, getMin}){
   refreshPill();
 
   function emit(){ onChange(currentValue()); refreshPill(); }
-  hourSel.onchange = () => { populateMinutes(); emit(); };
-  minSel.onchange = emit;
+
+  function onFieldInput(el, next){
+    sanitizeDigits(el);
+    if(el.value.length === el.maxLength && next) next.focus();
+  }
+  hourSel.oninput = () => onFieldInput(hourSel, minSel);
+  minSel.oninput = () => onFieldInput(minSel, null);
+
+  function onFieldBlur(){ finalizeTime(); emit(); }
+  hourSel.onblur = onFieldBlur;
+  minSel.onblur = onFieldBlur;
 
   function openEditor(){ pill.style.display = "none"; editRow.style.display = "flex"; }
   function closeEditor(){ editRow.style.display = "none"; pill.style.display = "flex"; }
@@ -2026,11 +2666,10 @@ function makeTimeSelectField({value, label, onChange, getMin}){
   wrap.appendChild(editRow);
 
   // Called by a paired "From" field when its value changes, so this "To"
-  // field's option lists (and current value, if it's now invalid) update.
+  // field's current value re-validates against the new minimum.
   wrap.refreshMinConstraint = function(){
     const before = currentValue();
-    populateHours();
-    populateMinutes();
+    finalizeTime();
     if(currentValue() !== before) emit(); else refreshPill();
   };
 
@@ -2099,7 +2738,8 @@ function makeStatusCell(value, label, onChange){
 
   STATUS_OPTIONS.forEach(opt => {
     const optWrap = document.createElement('label');
-    optWrap.className = "status-opt";
+    const slug = opt.toLowerCase().replace(/\s+/g,'-');
+    optWrap.className = "status-opt status-opt-" + slug;
     const cb = document.createElement('input');
     cb.type = "checkbox";
     cb.checked = current === opt;
@@ -2114,10 +2754,18 @@ function makeStatusCell(value, label, onChange){
       }
       closeOptions();
     };
+    const dot = document.createElement('span');
+    dot.className = "status-dot";
     const txt = document.createElement('span');
+    txt.className = "status-opt-text";
     txt.textContent = opt;
+    const check = document.createElement('span');
+    check.className = "status-check";
+    check.innerHTML = "&#10003;";
     optWrap.appendChild(cb);
+    optWrap.appendChild(dot);
     optWrap.appendChild(txt);
+    optWrap.appendChild(check);
     options.appendChild(optWrap);
   });
 
@@ -2130,11 +2778,12 @@ function makeStatusCell(value, label, onChange){
 function makeDateCell(value, label, onChange){
   const td = document.createElement('td');
   td.setAttribute('data-label', label);
-  const el = document.createElement('input');
-  el.type = "date";
-  el.value = isISODate(value) ? value : "";
-  el.onchange = (e) => onChange(e.target.value);
-  td.appendChild(el);
+  const field = makeDateSelectField({
+    value: isISODate(value) ? value : "",
+    label: label || "Date",
+    onChange: onChange
+  });
+  td.appendChild(field);
   return td;
 }
 
@@ -2145,9 +2794,23 @@ function makeCell(value, label, onChange, useTextarea, placeholder){
   if(!useTextarea) el.type = "text";
   el.value = value;
   if(placeholder) el.placeholder = placeholder;
-  el.oninput = (e) => onChange(e.target.value);
+  el.oninput = (e) => { onChange(e.target.value); if(useTextarea) growIfFocused(el); };
+  if(useTextarea){
+    el.rows = 1;
+    el.addEventListener('focus', () => { el.style.maxHeight = el.scrollHeight + 'px'; });
+    el.addEventListener('blur', () => { el.style.maxHeight = ''; });
+  }
   td.appendChild(el);
   return td;
+}
+
+// While a textarea cell is focused and the person keeps typing, keep
+// growing its max-height to match content so nothing gets clipped
+// mid-edit. Only runs while the element still has focus.
+function growIfFocused(el){
+  if(document.activeElement !== el) return;
+  el.style.maxHeight = 'none';
+  el.style.maxHeight = el.scrollHeight + 'px';
 }
 
 // initial paint: build the My Plans content in the background, but land on Home
@@ -2281,5 +2944,96 @@ showView('home');
   }
 </script>
 
+  <!-- Feedback widget -->
+  <button class="feedback-fab" id="feedbackFab" onclick="openFeedback()" aria-label="Send feedback">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
+    Feedback
+  </button>
+
+  <div class="feedback-overlay" id="feedbackOverlay" onclick="if(event.target===this) closeFeedback()">
+    <div class="feedback-panel">
+      <h3>Send a comment</h3>
+      <p>What's not working / what would you improve?</p>
+      <textarea id="feedbackText" placeholder="Type here..."></textarea>
+      <input type="text" class="feedback-hp" id="feedbackHoneypot" tabindex="-1" autocomplete="off">
+      <div class="feedback-actions">
+        <button class="feedback-cancel" onclick="closeFeedback()">Cancel</button>
+        <button class="feedback-send" id="feedbackSendBtn" onclick="sendFeedback()">Send</button>
+      </div>
+      <div class="feedback-status" id="feedbackStatus"></div>
+    </div>
+  </div>
+
+  <script>
+    const FEEDBACK_WORKER_URL = "https://myplanfeedback.eliabungata.workers.dev";
+
+    function openFeedback(){
+      document.getElementById('feedbackOverlay').classList.add('open');
+      document.getElementById('feedbackStatus').textContent = '';
+      document.getElementById('feedbackStatus').className = 'feedback-status';
+      setTimeout(() => document.getElementById('feedbackText').focus(), 50);
+    }
+    function closeFeedback(){
+      document.getElementById('feedbackOverlay').classList.remove('open');
+    }
+
+    function sendFeedback(){
+      const textEl = document.getElementById('feedbackText');
+      const comment = textEl.value.trim();
+      const statusEl = document.getElementById('feedbackStatus');
+      const btn = document.getElementById('feedbackSendBtn');
+      if(!comment){
+        statusEl.textContent = 'Please write something first.';
+        statusEl.className = 'feedback-status err';
+        return;
+      }
+
+      let view = (typeof currentView !== 'undefined') ? currentView : 'unknown';
+      let planTitle = '';
+      try{
+        if(view === 'myplans' && typeof activePlan === 'function'){
+          const p = activePlan();
+          if(p && p.title) planTitle = p.title;
+        }
+      }catch(e){}
+
+      const payload = {
+        comment: comment,
+        view: view,
+        planTitle: planTitle,
+        timestamp: new Date().toISOString(),
+        userAgent: navigator.userAgent,
+        website: document.getElementById('feedbackHoneypot').value
+      };
+
+      btn.disabled = true;
+      statusEl.textContent = 'Sending...';
+      statusEl.className = 'feedback-status';
+
+      fetch(FEEDBACK_WORKER_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      })
+      .then(res => res.json().then(data => ({ ok: res.ok, data })))
+      .then(({ ok, data }) => {
+        btn.disabled = false;
+        if(ok && data.success !== false){
+          statusEl.textContent = 'Thanks — got it!';
+          statusEl.className = 'feedback-status ok';
+          textEl.value = '';
+          setTimeout(closeFeedback, 1200);
+        } else {
+          statusEl.textContent = "Couldn't send — try again.";
+          statusEl.className = 'feedback-status err';
+        }
+      })
+      .catch(() => {
+        btn.disabled = false;
+        statusEl.textContent = "Couldn't send — try again.";
+        statusEl.className = 'feedback-status err';
+      });
+    }
+  </script>
 </body>
 </html>
