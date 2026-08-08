@@ -1699,12 +1699,38 @@ function doSave(){
 
 function saveToStorage(){
   if(autosaveEnabled){
-    doSave();
+    // Debounce: typing fires this on every keystroke, but writing the
+    // full JSON blob to localStorage (and pinging the cloud) on every
+    // single character is unnecessary main-thread work and causes
+    // typing lag, especially on slower/mobile devices. Wait for a short
+    // pause in typing instead, then save once.
+    hasUnsavedChanges = true;
+    if(_saveDebounceTimer) clearTimeout(_saveDebounceTimer);
+    _saveDebounceTimer = setTimeout(() => {
+      _saveDebounceTimer = null;
+      doSave();
+      hasUnsavedChanges = false;
+    }, 500);
   } else {
     hasUnsavedChanges = true;
     updateSaveStatus();
   }
 }
+let _saveDebounceTimer = null;
+function flushPendingSave(){
+  if(_saveDebounceTimer){
+    clearTimeout(_saveDebounceTimer);
+    _saveDebounceTimer = null;
+    doSave();
+    hasUnsavedChanges = false;
+  }
+}
+// Make sure a save that's mid-debounce is never lost if the tab is
+// closed, refreshed, or backgrounded before the 500ms timer fires.
+window.addEventListener('beforeunload', flushPendingSave);
+document.addEventListener('visibilitychange', () => {
+  if(document.visibilityState === 'hidden') flushPendingSave();
+});
 function updateSaveStatus(){
   const el = document.getElementById('saveStatus');
   [el].forEach(target => {
@@ -1751,6 +1777,7 @@ function updateSaveStatus(){
   }
 }
 function manualSave(){
+  if(_saveDebounceTimer){ clearTimeout(_saveDebounceTimer); _saveDebounceTimer = null; }
   doSave();
   hasUnsavedChanges = false;
   const btn = document.getElementById('saveBtn');
