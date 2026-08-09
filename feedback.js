@@ -101,15 +101,23 @@ const FEEDBACK_WORKER_URL = "https://myplanfeedback.eliabungata.workers.dev";
           textEl.value = '';
           setTimeout(closeFeedback, 1200);
         } else {
-          statusEl.textContent = "Couldn't send — try again.";
+          statusEl.textContent = getFeedbackErrorMessage(data && data.message);
           statusEl.className = 'feedback-status err';
         }
       })
       .catch(() => {
         btn.disabled = false;
-        statusEl.textContent = "Couldn't send — try again.";
+        statusEl.textContent = "Couldn't send — check your connection and try again.";
         statusEl.className = 'feedback-status err';
       });
+    }
+
+    function getFeedbackErrorMessage(serverMessage){
+      const msg = (serverMessage || '').toLowerCase();
+      if(msg.includes('rate limit') || msg.includes('temporarily blocked')){
+        return "We're getting a lot of feedback right now — please wait a few minutes and try again.";
+      }
+      return "Couldn't send — please try again in a little while.";
     }
 
     // ---------- Custom confirm modal (replaces native confirm()) ----------
