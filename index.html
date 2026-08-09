@@ -1006,9 +1006,10 @@
   .actions-table th:nth-child(3){ min-width:170px; }
   .actions-table th:nth-child(4){ min-width:150px; }
   .actions-table th:nth-child(5){ min-width:140px; }
-  .log-table{ min-width:520px; }
-  .log-table th:nth-child(2){ min-width:220px; }
-  .log-table th:nth-child(3){ min-width:180px; }
+  .log-table{ min-width:620px; }
+  .log-table th:nth-child(2){ min-width:100px; }
+  .log-table th:nth-child(3){ min-width:220px; }
+  .log-table th:nth-child(4){ min-width:180px; }
   thead th{
     background:var(--navy);
     color:#fff;
@@ -1066,131 +1067,58 @@
     flex-direction:column;
     gap:4px;
     padding:6px;
-    min-width:168px;
+    min-width:210px;
   }
   .pill-field{ position:relative; }
-  .pill-btn{
+  .date-select-group, .time-select-group{
     display:flex;
+    align-items:center;
+  }
+  /* Single-cell date/time pill: one clickable pill (icon + label/value)
+     per field. Clicking it opens the browser's own native date/time
+     picker via a hidden native input — no typing, no segmented
+     dropdowns. */
+  .dt-pill{
+    display:inline-flex;
     align-items:center;
     gap:6px;
-    width:100%;
+    max-width:100%;
+    padding:7px 12px;
     background:var(--surface-alt);
     border:1.5px solid var(--line);
-    border-radius:6px;
-    padding:7px 26px 7px 9px;
+    border-radius:999px;
     font-family:var(--font-ui);
     font-size:12px;
-    color:var(--muted);
+    font-weight:500;
+    color:var(--ink);
     cursor:pointer;
-    position:relative;
-    transition:border-color .15s ease, background .15s ease, color .15s ease, box-shadow .15s ease;
+    transition:border-color .15s ease, background-color .15s ease, box-shadow .15s ease;
   }
-  .pill-btn::after{
-    content:"";
-    position:absolute;
-    right:9px; top:50%;
-    width:7px; height:7px;
-    border-right:1.6px solid var(--muted);
-    border-bottom:1.6px solid var(--muted);
-    transform:translateY(-65%) rotate(45deg);
-    transition:border-color .15s ease;
+  .dt-pill:hover{
+    border-color:var(--navy); background:var(--surface); box-shadow:0 2px 8px rgba(31,78,120,0.1);
   }
-  .pill-btn:hover{ border-color:var(--navy); background:var(--surface); box-shadow:0 2px 8px rgba(31,78,120,0.1); }
-  .pill-btn:hover::after{ border-color:var(--navy); }
-  .pill-btn.has-value{ color:var(--ink); font-weight:500; background:var(--surface); }
-  .pill-icon{ display:flex; align-items:center; color:var(--accent-text); flex-shrink:0; }
-  .pill-text{
+  .dt-pill:focus-visible{
+    outline:none; border-color:var(--navy); box-shadow:0 0 0 3px rgba(31,78,120,0.14);
+  }
+  .dt-pill svg{ flex-shrink:0; color:var(--accent-text); }
+  .dt-pill-text{
+    white-space:nowrap;
     overflow:hidden;
     text-overflow:ellipsis;
-    white-space:nowrap;
   }
-  .pill-input{
-    width:100%;
-    padding:6px 8px;
-    border:1.5px solid var(--navy);
-    border-radius:6px;
-    font-family:var(--font-ui);
-    font-size:12px;
-    background:var(--surface);
-    box-shadow:0 0 0 3px rgba(31,78,120,0.12);
+  .dt-pill:not(.has-value) .dt-pill-text{ color:var(--muted); }
+  /* Backs each pill — invisible and unreachable by tab, but still a
+     real native date/time input so .showPicker() can open the
+     browser's own full calendar/clock UI on click. No manual typing
+     is possible since the visible pill is a <button>, not the input. */
+  .native-date-hidden{
+    position:absolute;
+    width:1px; height:1px;
+    padding:0; margin:0;
+    border:0;
+    opacity:0;
+    pointer-events:none;
   }
-  .pill-input:focus{ outline:none; }
-  .time-edit-row{
-    display:flex;
-    align-items:center;
-    gap:5px;
-    border:1.5px solid var(--navy);
-    border-radius:6px;
-    padding:5px 6px;
-    background:var(--surface);
-    box-shadow:0 0 0 3px rgba(31,78,120,0.12);
-  }
-  .time-select{
-    flex:1;
-    min-width:0;
-    max-width:56px;
-    box-sizing:border-box;
-    border:1.5px solid var(--line);
-    border-radius:5px;
-    padding:6px 4px;
-    font-family:var(--font-ui);
-    font-size:12.5px;
-    background:var(--surface);
-    color:var(--ink);
-    cursor:text;
-    appearance:none;
-    -webkit-appearance:none;
-    text-align:left;
-    transition:border-color .15s ease, box-shadow .15s ease, background-color .15s ease;
-  }
-  .time-select:hover{ border-color:var(--navy); background-color:var(--surface-focus); }
-  .time-select:focus{ outline:none; border-color:var(--navy); box-shadow:0 0 0 3px rgba(31,78,120,0.14); }
-  .time-sep{ font-weight:700; color:var(--muted); flex-shrink:0; }
-  .time-done-btn{
-    background:var(--good);
-    color:#fff;
-    border:none;
-    border-radius:5px;
-    width:26px;
-    height:26px;
-    flex-shrink:0;
-    cursor:pointer;
-    font-size:13px;
-    line-height:1;
-    transition:opacity .15s ease;
-  }
-  .time-done-btn:hover{ opacity:0.85; }
-  .date-edit-row{
-    display:flex;
-    align-items:center;
-    gap:3px;
-    border:1.5px solid var(--navy);
-    border-radius:6px;
-    padding:5px 4px;
-    background:var(--surface);
-    box-shadow:0 0 0 3px rgba(31,78,120,0.12);
-    flex-wrap:wrap;
-  }
-  .date-select{
-    min-width:0;
-    border:1.5px solid var(--line);
-    border-radius:5px;
-    padding:6px 2px;
-    font-family:var(--font-ui);
-    font-size:11px;
-    background:var(--surface);
-    color:var(--ink);
-    cursor:text;
-    appearance:none;
-    -webkit-appearance:none;
-    text-align:left;
-    transition:border-color .15s ease, box-shadow .15s ease, background-color .15s ease;
-  }
-  .date-select:hover{ border-color:var(--navy); background-color:var(--surface-focus); }
-  .date-select:focus{ outline:none; border-color:var(--navy); box-shadow:0 0 0 3px rgba(31,78,120,0.14); }
-  .date-select-month{ flex:0 0 46px !important; width:46px !important; max-width:46px !important; min-width:0 !important; box-sizing:border-box !important; }
-  .date-select-day{ flex:0 0 46px !important; width:46px !important; max-width:46px !important; min-width:0 !important; box-sizing:border-box !important; }
-  .date-select-year{ flex:0 0 46px !important; width:46px !important; max-width:46px !important; min-width:0 !important; box-sizing:border-box !important; }
   .status-cell{
     padding:8px;
     min-width:150px;
@@ -1608,7 +1536,7 @@ function uid(){ return 'p' + Math.random().toString(36).slice(2,9); }
 function emptyVision(){ return ""; }
 function emptyMotive(){ return ""; }
 function emptyAction(){ return {action:"", duration:"", time:"", resources:"", status:""}; }
-function emptyLog(){ return {date:"", change:"", reason:""}; }
+function emptyLog(){ return {date:"", time:"", change:"", reason:""}; }
 
 function newPlan(title){
   return {
@@ -1644,6 +1572,7 @@ function sanitizePlan(p){
     })) : [],
     log: Array.isArray(p.log) ? p.log.map(l => ({
       date: (l && l.date) || "",
+      time: (l && l.time) || "",
       change: (l && l.change) || "",
       reason: (l && l.reason) || ""
     })) : []
@@ -2313,7 +2242,7 @@ function buildLogSection(log){
 
   const table = document.createElement('table');
   table.className = "log-table";
-  table.innerHTML = `<thead><tr><th style="width:110px;">Date</th><th>Change Made</th><th>Reason</th><th></th></tr></thead>`;
+  table.innerHTML = `<thead><tr><th style="width:110px;">Date</th><th style="width:100px;">Time</th><th>Change Made</th><th>Reason</th><th></th></tr></thead>`;
   const tbody = document.createElement('tbody');
 
   log.forEach((entry, i) => {
@@ -2322,6 +2251,10 @@ function buildLogSection(log){
     const dateTd = makeDateCell(entry.date, "Date", (v)=>updateLog(i,'date',v));
     dateTd.classList.add('cell-primary');
     tr.appendChild(dateTd);
+
+    const timeTd = makeTimeCell(entry.time, "Time", (v)=>updateLog(i,'time',v));
+    timeTd.classList.add('cell-primary');
+    tr.appendChild(timeTd);
 
     const changeTd = makeCell(entry.change, "Change Made", (v)=>updateLog(i,'change',v), true);
     changeTd.classList.add('cell-primary');
@@ -2391,187 +2324,96 @@ function createRowToggle(hiddenFieldNames){
 
 function isISODate(s){ return /^\d{4}-\d{2}-\d{2}$/.test(s || ""); }
 function isHHMM(s){ return /^\d{2}:\d{2}$/.test(s || ""); }
-
+function pad2(n){ return String(n).padStart(2,'0'); }
+const MONTH_NAMES = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 const CALENDAR_ICON = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>';
 const CLOCK_ICON = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>';
 
 function formatDateDisplay(iso){
-  if(!isISODate(iso)) return null;
-  const [y,m,d] = iso.split('-').map(Number);
-  const dt = new Date(y, m-1, d);
-  return dt.toLocaleDateString(undefined, {month:'short', day:'numeric', year:'numeric'});
-}
-function formatTimeDisplay(hhmm){
-  if(!isHHMM(hhmm)) return null;
-  const [h,m] = hhmm.split(':').map(Number);
-  const dt = new Date(); dt.setHours(h,m,0,0);
-  return dt.toLocaleTimeString(undefined, {hour:'numeric', minute:'2-digit'});
+  if(!isISODate(iso)) return "";
+  const [y, m, d] = iso.split('-').map(Number);
+  return MONTH_NAMES[m - 1] + " " + d + ", " + y;
 }
 
-const MONTH_NAMES = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-function daysInMonth(year, month){ return new Date(year, month, 0).getDate(); }
-
-// Month/Day/Year picked from fixed dropdown lists only — no free-text entry.
-// Optional getMin(): returns an ISO date string ("YYYY-MM-DD") that this field
-// may not go earlier than. Options before it are simply not offered.
-function makeDateSelectField({value, label, onChange, getMin}){
+// Single clickable pill (icon + label/value) backed by a hidden native
+// <input type="date">. Clicking anywhere on the pill calls the input's
+// .showPicker() to open the browser's own calendar grid. No manual
+// typing is possible — the visible element is a <button>, not the
+// input. Optional getMin(): an ISO date string ("YYYY-MM-DD") this
+// field may not go earlier than (equal is allowed).
+function makeDatePillField({value, label, onChange, getMin}){
   const wrap = document.createElement('div');
-  wrap.className = "pill-field";
+  wrap.className = "pill-field date-select-group";
+
+  let val = isISODate(value) ? value : "";
 
   const pill = document.createElement('button');
   pill.type = "button";
-  pill.className = "pill-btn";
-  const icon = document.createElement('span');
-  icon.className = "pill-icon";
-  icon.innerHTML = CALENDAR_ICON;
-  const text = document.createElement('span');
-  text.className = "pill-text";
-  pill.appendChild(icon);
-  pill.appendChild(text);
+  pill.className = "dt-pill";
+  pill.setAttribute('aria-label', label || "Date");
 
-  const editRow = document.createElement('div');
-  editRow.className = "date-edit-row";
-  editRow.style.display = "none";
+  const textEl = document.createElement('span');
+  textEl.className = "dt-pill-text";
 
-  const parts = isISODate(value) ? value.split('-').map(Number) : [null, null, null];
-  const [y0, m0, d0] = parts;
-  const nowYear = new Date().getFullYear();
-
-  const monthSel = document.createElement('input');
-  monthSel.type = "text";
-  monthSel.inputMode = "numeric";
-  monthSel.maxLength = 2;
-  monthSel.placeholder = "MM";
-  monthSel.className = "date-select date-select-month";
-
-  const daySel = document.createElement('input');
-  daySel.type = "text";
-  daySel.inputMode = "numeric";
-  daySel.maxLength = 2;
-  daySel.placeholder = "DD";
-  daySel.className = "date-select date-select-day";
-
-  const yearSel = document.createElement('input');
-  yearSel.type = "text";
-  yearSel.inputMode = "numeric";
-  yearSel.maxLength = 4;
-  yearSel.placeholder = "YYYY";
-  yearSel.className = "date-select date-select-year";
-
-  function minParts(){
-    if(!getMin) return null;
-    const m = getMin();
-    return isISODate(m) ? m.split('-').map(Number) : null; // [y,m,d]
+  function refreshPill(){
+    pill.classList.toggle('has-value', !!val);
+    textEl.textContent = val ? formatDateDisplay(val) : (label || "Date");
   }
 
-  function clampNum(str, lo, hi){
-    if(str === "") return "";
-    let n = parseInt(str, 10);
-    if(isNaN(n)) return "";
-    n = Math.max(lo, Math.min(hi, n));
-    return n;
-  }
+  const nativeInput = document.createElement('input');
+  nativeInput.type = "date";
+  nativeInput.className = "native-date-hidden";
+  nativeInput.tabIndex = -1;
+  nativeInput.setAttribute('aria-hidden', 'true');
 
-  // Sanitize as the person types: digits only, respect maxlength.
-  function sanitizeDigits(el){
-    el.value = el.value.replace(/[^0-9]/g, '').slice(0, el.maxLength);
-  }
-
-  function populateYears(preferred){
-    if(preferred !== undefined) yearSel.value = preferred || "";
-  }
-  function populateMonths(preferred){
-    if(preferred !== undefined) monthSel.value = preferred || "";
-  }
-  function populateDays(preferred){
-    if(preferred !== undefined) daySel.value = preferred || "";
-  }
-
-  // On blur, clamp/pad each field to a valid value and enforce the
-  // paired min-date constraint (used by a "To" field against "From").
-  function finalizeDate(){
-    const min = minParts();
-    const y = clampNum(yearSel.value, nowYear - 2, nowYear + 8);
-    yearSel.value = y === "" ? "" : String(y);
-
-    let m = clampNum(monthSel.value, 1, 12);
-    monthSel.value = m === "" ? "" : pad2(m);
-
-    const yForDays = yearSel.value ? Number(yearSel.value) : nowYear;
-    const mForDays = monthSel.value ? Number(monthSel.value) : 1;
-    let d = clampNum(daySel.value, 1, daysInMonth(yForDays, mForDays));
-    daySel.value = d === "" ? "" : pad2(d);
-
-    // Enforce min-date: if the fully-entered date is earlier than the
-    // paired constraint, bump it up to the minimum allowed date.
-    if(min && yearSel.value && monthSel.value && daySel.value){
-      const cur = [Number(yearSel.value), Number(monthSel.value), Number(daySel.value)];
-      const before = cur[0] < min[0] ||
-        (cur[0] === min[0] && cur[1] < min[1]) ||
-        (cur[0] === min[0] && cur[1] === min[1] && cur[2] < min[2]);
-      if(before){
-        yearSel.value = String(min[0]);
-        monthSel.value = pad2(min[1]);
-        daySel.value = pad2(min[2]);
-      }
+  function syncNativeInput(){
+    nativeInput.value = val;
+    if(getMin){
+      const m = getMin();
+      nativeInput.min = isISODate(m) ? m : "";
     }
   }
 
-  populateYears(y0 ? String(y0) : "");
-  populateMonths(m0 ? pad2(m0) : "");
-  populateDays(d0 ? pad2(d0) : "");
-
-  const doneBtn = document.createElement('button');
-  doneBtn.type = "button";
-  doneBtn.className = "time-done-btn";
-  doneBtn.textContent = "\u2713";
-  doneBtn.title = "Done";
-
-  function currentValue(){
-    return (yearSel.value && monthSel.value && daySel.value) ? (yearSel.value + '-' + monthSel.value + '-' + daySel.value) : "";
+  function enforceMin(){
+    const min = getMin ? getMin() : null;
+    if(isISODate(min) && val && val < min) val = min;
   }
-  function refreshPill(){
-    const disp = formatDateDisplay(currentValue());
-    text.textContent = disp || label;
-    pill.classList.toggle('has-value', !!disp);
-  }
+
   refreshPill();
+  syncNativeInput();
 
-  function emit(){ onChange(currentValue()); refreshPill(); }
+  nativeInput.addEventListener('change', () => {
+    if(isISODate(nativeInput.value)){
+      val = nativeInput.value;
+      enforceMin();
+      onChange(val);
+      refreshPill();
+      syncNativeInput();
+    }
+  });
 
-  function onFieldInput(el, next){
-    sanitizeDigits(el);
-    if(el.value.length === el.maxLength && next) next.focus();
-  }
-  monthSel.oninput = () => onFieldInput(monthSel, daySel);
-  daySel.oninput = () => onFieldInput(daySel, yearSel);
-  yearSel.oninput = () => onFieldInput(yearSel, null);
+  pill.onclick = () => {
+    syncNativeInput();
+    if(typeof nativeInput.showPicker === "function"){
+      try{ nativeInput.showPicker(); return; }catch(e){}
+    }
+    nativeInput.focus();
+    nativeInput.click();
+  };
 
-  function onFieldBlur(){ finalizeDate(); emit(); }
-  monthSel.onblur = onFieldBlur;
-  daySel.onblur = onFieldBlur;
-  yearSel.onblur = onFieldBlur;
-
-  function openEditor(){ pill.style.display = "none"; editRow.style.display = "flex"; }
-  function closeEditor(){ editRow.style.display = "none"; pill.style.display = "flex"; }
-
-  pill.onclick = openEditor;
-  doneBtn.onclick = closeEditor;
-
-  editRow.appendChild(monthSel);
-  editRow.appendChild(daySel);
-  editRow.appendChild(yearSel);
-  editRow.appendChild(doneBtn);
-
+  pill.appendChild(document.createRange().createContextualFragment(CALENDAR_ICON));
+  pill.appendChild(textEl);
   wrap.appendChild(pill);
-  wrap.appendChild(editRow);
+  wrap.appendChild(nativeInput);
 
   // Called by a paired "From" field when its value changes, so this "To"
   // field's current value re-validates against the new minimum.
   wrap.refreshMinConstraint = function(){
-    const before = currentValue();
-    finalizeDate();
-    if(currentValue() !== before) emit(); else refreshPill();
+    const before = val;
+    enforceMin();
+    if(val !== before) onChange(val);
+    refreshPill();
+    syncNativeInput();
   };
 
   return wrap;
@@ -2591,14 +2433,14 @@ function makeDateRangeCell(value, label, onChange){
     onChange(v);
   }
   let endField;
-  const startField = makeDateSelectField({
+  const startField = makeDatePillField({
     value:startVal, label:"From", onChange:(v)=>{
       startVal = v;
       emit();
       if(endField) endField.refreshMinConstraint();
     }
   });
-  endField = makeDateSelectField({
+  endField = makeDatePillField({
     value:endVal, label:"To", getMin:() => startVal, onChange:(v)=>{ endVal = v; emit(); }
   });
   wrap.appendChild(startField);
@@ -2607,145 +2449,94 @@ function makeDateRangeCell(value, label, onChange){
   return td;
 }
 
-function pad2(n){ return String(n).padStart(2,'0'); }
+function formatTimeDisplay(hhmm){
+  if(!isHHMM(hhmm)) return "";
+  let [h, m] = hhmm.split(':').map(Number);
+  const suffix = h >= 12 ? "PM" : "AM";
+  h = h % 12;
+  if(h === 0) h = 12;
+  return h + ":" + pad2(m) + " " + suffix;
+}
 
-// Hour/minute picked from fixed dropdown lists only — no free-text entry.
-// Optional getMin(): returns an "HH:MM" string that this field may not go
-// earlier than. Options before it are simply not offered.
-function makeTimeSelectField({value, label, onChange, getMin}){
+// Single clickable pill (icon + label/value) backed by a hidden native
+// <input type="time">. Clicking anywhere on the pill calls the input's
+// .showPicker() to open the browser's own hour/minute picker. No
+// manual typing is possible — the visible element is a <button>, not
+// the input. Optional getMin(): an "HH:MM" string this field may not
+// go earlier than (equal is allowed).
+function makeTimePillField({value, label, onChange, getMin}){
   const wrap = document.createElement('div');
-  wrap.className = "pill-field";
+  wrap.className = "pill-field time-select-group";
+
+  let val = isHHMM(value) ? value : "";
 
   const pill = document.createElement('button');
   pill.type = "button";
-  pill.className = "pill-btn";
-  const icon = document.createElement('span');
-  icon.className = "pill-icon";
-  icon.innerHTML = CLOCK_ICON;
-  const text = document.createElement('span');
-  text.className = "pill-text";
-  pill.appendChild(icon);
-  pill.appendChild(text);
+  pill.className = "dt-pill";
+  pill.setAttribute('aria-label', label || "Time");
 
-  const editRow = document.createElement('div');
-  editRow.className = "time-edit-row";
-  editRow.style.display = "none";
+  const textEl = document.createElement('span');
+  textEl.className = "dt-pill-text";
 
-  const [h0, m0] = isHHMM(value) ? value.split(':') : ["", ""];
-
-  const hourSel = document.createElement('input');
-  hourSel.type = "text";
-  hourSel.inputMode = "numeric";
-  hourSel.maxLength = 2;
-  hourSel.placeholder = "HH";
-  hourSel.className = "time-select";
-
-  const minSel = document.createElement('input');
-  minSel.type = "text";
-  minSel.inputMode = "numeric";
-  minSel.maxLength = 2;
-  minSel.placeholder = "MM";
-  minSel.className = "time-select";
-
-  function minParts(){
-    if(!getMin) return null;
-    const m = getMin();
-    return isHHMM(m) ? m.split(':') : null; // ["HH","MM"] as zero-padded strings
+  function refreshPill(){
+    pill.classList.toggle('has-value', !!val);
+    textEl.textContent = val ? formatTimeDisplay(val) : (label || "Time");
   }
 
-  function clampNum(str, lo, hi){
-    if(str === "") return "";
-    let n = parseInt(str, 10);
-    if(isNaN(n)) return "";
-    n = Math.max(lo, Math.min(hi, n));
-    return n;
-  }
+  const nativeInput = document.createElement('input');
+  nativeInput.type = "time";
+  nativeInput.className = "native-date-hidden";
+  nativeInput.tabIndex = -1;
+  nativeInput.setAttribute('aria-hidden', 'true');
 
-  function sanitizeDigits(el){
-    el.value = el.value.replace(/[^0-9]/g, '').slice(0, el.maxLength);
-  }
-
-  function populateHours(preferred){
-    if(preferred !== undefined) hourSel.value = preferred || "";
-  }
-  function populateMinutes(preferred){
-    if(preferred !== undefined) minSel.value = preferred || "";
-  }
-
-  // On blur, clamp/pad each field and enforce the paired min-time
-  // constraint (used by a "To" field against "From").
-  function finalizeTime(){
-    const min = minParts();
-    let h = clampNum(hourSel.value, 0, 23);
-    hourSel.value = h === "" ? "" : pad2(h);
-    let m = clampNum(minSel.value, 0, 59);
-    minSel.value = m === "" ? "" : pad2(m);
-
-    if(min && hourSel.value && minSel.value){
-      const before = hourSel.value < min[0] || (hourSel.value === min[0] && minSel.value < min[1]);
-      if(before){
-        hourSel.value = min[0];
-        minSel.value = min[1];
-      }
+  function syncNativeInput(){
+    nativeInput.value = val;
+    if(getMin){
+      const m = getMin();
+      nativeInput.min = isHHMM(m) ? m : "";
     }
   }
 
-  populateHours(h0);
-  populateMinutes(m0);
-
-  const sep = document.createElement('span');
-  sep.className = "time-sep";
-  sep.textContent = ":";
-
-  const doneBtn = document.createElement('button');
-  doneBtn.type = "button";
-  doneBtn.className = "time-done-btn";
-  doneBtn.textContent = "\u2713";
-  doneBtn.title = "Done";
-
-  function currentValue(){
-    return (hourSel.value && minSel.value) ? (hourSel.value + ':' + minSel.value) : "";
+  function enforceMin(){
+    const min = getMin ? getMin() : null;
+    if(isHHMM(min) && val && val < min) val = min;
   }
-  function refreshPill(){
-    const disp = formatTimeDisplay(currentValue());
-    text.textContent = disp || label;
-    pill.classList.toggle('has-value', !!disp);
-  }
+
   refreshPill();
+  syncNativeInput();
 
-  function emit(){ onChange(currentValue()); refreshPill(); }
+  nativeInput.addEventListener('change', () => {
+    if(isHHMM(nativeInput.value)){
+      val = nativeInput.value;
+      enforceMin();
+      onChange(val);
+      refreshPill();
+      syncNativeInput();
+    }
+  });
 
-  function onFieldInput(el, next){
-    sanitizeDigits(el);
-    if(el.value.length === el.maxLength && next) next.focus();
-  }
-  hourSel.oninput = () => onFieldInput(hourSel, minSel);
-  minSel.oninput = () => onFieldInput(minSel, null);
+  pill.onclick = () => {
+    syncNativeInput();
+    if(typeof nativeInput.showPicker === "function"){
+      try{ nativeInput.showPicker(); return; }catch(e){}
+    }
+    nativeInput.focus();
+    nativeInput.click();
+  };
 
-  function onFieldBlur(){ finalizeTime(); emit(); }
-  hourSel.onblur = onFieldBlur;
-  minSel.onblur = onFieldBlur;
-
-  function openEditor(){ pill.style.display = "none"; editRow.style.display = "flex"; }
-  function closeEditor(){ editRow.style.display = "none"; pill.style.display = "flex"; }
-
-  pill.onclick = openEditor;
-  doneBtn.onclick = closeEditor;
-
-  editRow.appendChild(hourSel);
-  editRow.appendChild(sep);
-  editRow.appendChild(minSel);
-  editRow.appendChild(doneBtn);
-
+  pill.appendChild(document.createRange().createContextualFragment(CLOCK_ICON));
+  pill.appendChild(textEl);
   wrap.appendChild(pill);
-  wrap.appendChild(editRow);
+  wrap.appendChild(nativeInput);
 
   // Called by a paired "From" field when its value changes, so this "To"
   // field's current value re-validates against the new minimum.
   wrap.refreshMinConstraint = function(){
-    const before = currentValue();
-    finalizeTime();
-    if(currentValue() !== before) emit(); else refreshPill();
+    const before = val;
+    enforceMin();
+    if(val !== before) onChange(val);
+    refreshPill();
+    syncNativeInput();
   };
 
   return wrap;
@@ -2765,14 +2556,14 @@ function makeTimeRangeCell(value, label, onChange){
     onChange(v);
   }
   let endField;
-  const startField = makeTimeSelectField({
+  const startField = makeTimePillField({
     value:startVal, label:"From", onChange:(v)=>{
       startVal = v;
       emit();
       if(endField) endField.refreshMinConstraint();
     }
   });
-  endField = makeTimeSelectField({
+  endField = makeTimePillField({
     value:endVal, label:"To", getMin:() => startVal, onChange:(v)=>{ endVal = v; emit(); }
   });
   wrap.appendChild(startField);
@@ -2853,9 +2644,21 @@ function makeStatusCell(value, label, onChange){
 function makeDateCell(value, label, onChange){
   const td = document.createElement('td');
   td.setAttribute('data-label', label);
-  const field = makeDateSelectField({
+  const field = makeDatePillField({
     value: isISODate(value) ? value : "",
     label: label || "Date",
+    onChange: onChange
+  });
+  td.appendChild(field);
+  return td;
+}
+
+function makeTimeCell(value, label, onChange){
+  const td = document.createElement('td');
+  td.setAttribute('data-label', label);
+  const field = makeTimePillField({
+    value: isHHMM(value) ? value : "",
+    label: label || "Time",
     onChange: onChange
   });
   td.appendChild(field);
