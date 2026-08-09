@@ -1634,11 +1634,11 @@
         <div class="toolbar-dropdown" id="fileMenuWrap">
           <button class="toolbar-btn" id="fileMenuBtn" onclick="toggleFileMenu(event)" aria-haspopup="true" aria-expanded="false">File &#9662;</button>
           <div class="toolbar-menu" id="fileMenu">
-            <button onclick="exportPlans(); closeFileMenu();">&#11015; Export all plans (.json)</button>
-            <button onclick="document.getElementById('importFile').click(); closeFileMenu();">&#11014; Import plans (.json)</button>
-            <div class="toolbar-menu-sep"></div>
             <button onclick="printCurrentPlanReport(); closeFileMenu();">🖨 Print current plan (PDF)</button>
             <button onclick="printAllPlansReport(); closeFileMenu();">🖨 Print all plans (PDF)</button>
+            <div class="toolbar-menu-sep"></div>
+            <button onclick="exportPlans(); closeFileMenu();">&#11015; Export all plans (.json)</button>
+            <button onclick="document.getElementById('importFile').click(); closeFileMenu();">&#11014; Import plans (.json)</button>
           </div>
         </div>
         <input type="file" id="importFile" accept="application/json" onchange="importPlans(event)">
