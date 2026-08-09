@@ -2119,16 +2119,42 @@ function renamePlan(i){
 }
 
 function addVision(){ activePlan().visions.push(emptyVision()); render(); }
-function removeVision(i){ activePlan().visions.splice(i,1); render(); }
+function removeVision(i){
+  const items = activePlan().visions;
+  confirmRowRemoval("vision entry", items[i], () => { items.splice(i,1); render(); });
+}
 
 function addMotive(){ activePlan().motives.push(emptyMotive()); render(); }
-function removeMotive(i){ activePlan().motives.splice(i,1); render(); }
+function removeMotive(i){
+  const items = activePlan().motives;
+  confirmRowRemoval("motive entry", items[i], () => { items.splice(i,1); render(); });
+}
 
 function addAction(){ activePlan().actions.push(emptyAction()); render(); }
-function removeAction(i){ activePlan().actions.splice(i,1); render(); }
+function removeAction(i){
+  const items = activePlan().actions;
+  confirmRowRemoval("action", items[i] && items[i].action, () => { items.splice(i,1); render(); });
+}
 
 function addLog(){ activePlan().log.push(emptyLog()); render(); }
-function removeLog(i){ activePlan().log.splice(i,1); render(); }
+function removeLog(i){
+  const items = activePlan().log;
+  confirmRowRemoval("log entry", items[i] && items[i].change, () => { items.splice(i,1); render(); });
+}
+
+// Shared confirmation for every row-level "−" remove button. Shows a
+// short preview of the actual text being deleted (truncated so a long
+// paragraph doesn't blow up the dialog) so the warning is concrete, not
+// just a generic "are you sure".
+function confirmRowRemoval(kindLabel, previewText, onConfirm){
+  const text = (previewText || "").trim();
+  const max = 140;
+  const preview = text.length > max ? text.slice(0, max).trim() + "…" : text;
+  const message = preview
+    ? 'This will delete: "' + preview + '" — this can\'t be undone.'
+    : "This can't be undone.";
+  showConfirmModal("Remove this " + kindLabel + "?", message, onConfirm);
+}
 
 // ---------- Field updates (no re-render, so focus/cursor is preserved) ----------
 function updatePlanTitle(v){
@@ -2318,12 +2344,15 @@ function buildPrintPlanNode(plan, {showOwnHeader}){
 // mode: 'current' | 'all'. Drives what gets built when printing actually
 // starts (see the beforeprint/matchMedia wiring below).
 let pendingPrintMode = 'current';
-let printReportActive = false;
 
+// Always rebuilds from the current pendingPrintMode — deliberately NOT
+// gated behind an "already active" flag. Some browsers don't reliably
+// fire `afterprint` when the print/save dialog is cancelled rather than
+// completed, which would leave a stale guard stuck "on" and cause the
+// next print (e.g. switching from "current plan" to "all plans") to
+// silently reuse the old report instead of rebuilding. Rebuilding is
+// cheap, so just always doing it is the robust choice.
 function activatePrintReport(){
-  if(printReportActive) return;
-  printReportActive = true;
-
   const container = document.getElementById('printReport');
   container.innerHTML = "";
   const reportRoot = document.createElement('div');
@@ -2363,8 +2392,6 @@ function activatePrintReport(){
 }
 
 function deactivatePrintReport(){
-  if(!printReportActive) return;
-  printReportActive = false;
   document.documentElement.classList.remove('printing-report');
   document.getElementById('printReport').innerHTML = "";
   pendingPrintMode = 'current';
