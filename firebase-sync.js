@@ -1,6 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
   import {
-    getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged
+    getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged
   } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
   import {
     getFirestore, doc, setDoc, getDoc, serverTimestamp
@@ -53,6 +53,15 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/fireba
   // happens to already be logged in on a shared/unlocked device.
   provider.setCustomParameters({ prompt: "select_account" });
 
+  // Mobile browsers generally can't open a real floating popup window,
+  // so signInWithPopup falls back to opening the account chooser as a
+  // full new page — which looks broken/inconsistent (page navigates
+  // away, then the picker shows up later). signInWithRedirect is the
+  // flow Firebase recommends for mobile instead: it does a single clean
+  // full-page redirect to Google and back, with no popup involved.
+  // Desktop keeps the popup, which works well there.
+  const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
   window.signIn = async function(){
     if(!cloudReady){
       alert("Cloud sync isn't configured yet. Add your Firebase project keys in the code (see the setup instructions).");
@@ -68,6 +77,12 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/fireba
     signInInProgress = true;
     setSignInButtonsDisabled(true);
     try{
+      if(isMobile){
+        // Redirects away immediately; the result is picked up by
+        // getRedirectResult() below after the page reloads.
+        await signInWithRedirect(auth, provider);
+        return;
+      }
       await signInWithPopup(auth, provider);
     }catch(e){
       // Not real failures — just the user backing out or closing the
@@ -134,6 +149,16 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/fireba
   }
 
   if(cloudReady){
+    // Catches errors from the mobile signInWithRedirect flow above (e.g.
+    // account chooser cancelled, or an account-conflict error). On
+    // success, onAuthStateChanged below fires with the signed-in user
+    // automatically — Firebase persists that across the redirect's page
+    // reload, so no extra handling is needed for the happy path.
+    getRedirectResult(auth).catch((e) => {
+      if(e && e.code !== 'auth/cancelled-popup-request' && e.code !== 'auth/popup-closed-by-user'){
+        console.warn("Redirect sign-in failed:", e);
+      }
+    });
     onAuthStateChanged(auth, (user) => {
       currentUser = user;
       window.updateAuthUI(user);
