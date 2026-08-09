@@ -1405,34 +1405,63 @@
     padding:4px 2px;
   }
 
+  /* ---------- Printable report ----------
+     Instead of printing whatever's on screen (raw inputs, toggle
+     buttons, the tab strip, sidebar, etc.), we build a separate,
+     purpose-formatted report into #printReport right before printing,
+     then hide everything else. This container stays display:none on
+     screen at all times; it only becomes visible under @media print,
+     and only once html.printing-report has been set by JS. */
+  #printReport{ display:none; }
+  .print-report{
+    font-family:var(--font-ui);
+    color:#20272F;
+    max-width:800px;
+    margin:0 auto;
+  }
+  .print-cover{
+    min-height:100vh;
+    display:flex; flex-direction:column; justify-content:center;
+    page-break-after:always;
+  }
+  .print-cover .print-kicker{ font-size:13px; letter-spacing:.08em; text-transform:uppercase; color:#65717C; margin:0 0 10px; }
+  .print-cover h1{ font-size:32px; margin:0 0 8px; }
+  .print-cover .print-date{ font-size:13px; color:#65717C; margin:0 0 32px; }
+  .print-toc{ list-style:none; margin:0; padding:0; }
+  .print-toc li{
+    display:flex; justify-content:space-between; gap:12px;
+    padding:8px 0; border-bottom:1px solid #D3D9E0; font-size:14px;
+  }
+  .print-plan{ page-break-before:always; padding-top:8px; }
+  .print-plan:first-child{ page-break-before:auto; }
+  .print-plan-header{ border-bottom:2px solid #20272F; padding-bottom:10px; margin-bottom:18px; }
+  .print-plan-header h1{ font-size:24px; margin:0 0 4px; }
+  .print-plan-header .print-date{ font-size:12px; color:#65717C; margin:0; }
+  .print-section{ margin:0 0 22px; break-inside:avoid; }
+  .print-section h2{
+    font-size:14px; text-transform:uppercase; letter-spacing:.04em;
+    color:#65717C; margin:0 0 10px; padding-bottom:6px; border-bottom:1px solid #D3D9E0;
+  }
+  .print-list{ margin:0; padding-left:20px; }
+  .print-list li{ margin:0 0 6px; font-size:13px; line-height:1.5; }
+  .print-empty{ font-size:13px; color:#9AA4AE; font-style:italic; }
+  .print-table{ width:100%; border-collapse:collapse; font-size:12px; }
+  .print-table th{
+    text-align:left; font-size:11px; text-transform:uppercase; letter-spacing:.03em;
+    color:#65717C; padding:6px 8px; border-bottom:1px solid #20272F;
+  }
+  .print-table td{ padding:7px 8px; border-bottom:1px solid #E4E8EC; vertical-align:top; line-height:1.4; }
+  .print-status-pill{
+    display:inline-block; padding:2px 8px; border-radius:999px; font-size:11px; font-weight:600;
+    background:#EFEFEF; color:#3A424A;
+  }
+
   @media print{
-    .sidebar, .menu-toggle, .sidebar-overlay, .newplan-btn, .myplans-toolbar,
-    .add-btn, .row-remove, .col-remove, .row-toggle-cell, .top-account-bar,
-    .feedback-fab, .feedback-overlay, .feedback-hint{
-      display:none !important;
-    }
-    .main-content{ margin-left:0; padding:0 !important; }
-    #view-home{ margin:0 !important; padding:0 !important; }
-
-    /* Reset the graph-paper grid background so it doesn't print on every page,
-       and force light-theme colors so a dark-mode session still prints legibly */
-    html{ --ink:#20272F; --muted:#65717C; --line:#D3D9E0; --surface:#fff; --surface-alt:#F3F6F9; --paper:#fff; }
-    body{ background:#fff !important; color:#20272F !important; }
-    .board{ border:none; margin:0; box-shadow:none; border-radius:0; }
-
-    /* Undo the tablet scroll wrapper and the mobile accordion stacking —
-       force tables back into real table grid display regardless of what
-       width the print engine resolves the page against */
-    .table-scroll{ overflow:visible !important; }
-    table{ display:table !important; table-layout:fixed !important; width:100% !important; min-width:0 !important; }
-    thead{ display:table-header-group !important; }
-    tbody{ display:table-row-group !important; }
-    tr{ display:table-row !important; border:none !important; padding-right:0 !important; margin-bottom:0 !important; }
-    th, td{ display:table-cell !important; }
-    tbody td.cell-secondary{ display:table-cell !important; }
-    tbody td::before{ content:none !important; }
-    .actions-table, .log-table,
-    .actions-table th, .log-table th{ min-width:0 !important; }
+    html.printing-report body > *:not(#printReport){ display:none !important; }
+    html.printing-report #printReport{ display:block !important; }
+    html.printing-report{ background:#fff; }
+    html.printing-report body{ background:#fff !important; }
+    @page{ margin:20mm 16mm; }
   }
 
   /* ---------- Responsive: tablet & phone ---------- */
@@ -1608,7 +1637,8 @@
             <button onclick="exportPlans(); closeFileMenu();">&#11015; Export all plans (.json)</button>
             <button onclick="document.getElementById('importFile').click(); closeFileMenu();">&#11014; Import plans (.json)</button>
             <div class="toolbar-menu-sep"></div>
-            <button onclick="printBoard(); closeFileMenu();">🖨 Print / Save as PDF</button>
+            <button onclick="printCurrentPlanReport(); closeFileMenu();">🖨 Print current plan (PDF)</button>
+            <button onclick="printAllPlansReport(); closeFileMenu();">🖨 Print all plans (PDF)</button>
           </div>
         </div>
         <input type="file" id="importFile" accept="application/json" onchange="importPlans(event)">
@@ -2140,7 +2170,201 @@ function importPlans(evt){
   reader.readAsText(file);
   evt.target.value = "";
 }
-function printBoard(){ window.print(); }
+// ---------- Printable report ----------
+// Builds a clean, purpose-formatted document (not a screenshot of the
+// editable board) into #printReport, then triggers the browser print
+// dialog. Raw textareas/pills/toggle buttons become plain text, dates
+// and times are formatted for reading, and empty rows are dropped.
+
+function escapeHtml(s){
+  return String(s == null ? "" : s).replace(/[&<>"']/g, c => ({
+    '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'
+  }[c]));
+}
+
+function formatDateRangeDisplay(value){
+  const parts = String(value || "").split(/\s*to\s*/i);
+  const start = formatDateDisplay(parts[0]);
+  const end = formatDateDisplay(parts[1]);
+  if(start && end) return start + " – " + end;
+  return start || end || "";
+}
+
+function formatTimeRangeDisplay(value){
+  const parts = String(value || "").split(/\s*(?:to|–|-)\s*/);
+  const start = formatTimeDisplay(parts[0]);
+  const end = formatTimeDisplay(parts[1]);
+  if(start && end) return start + " – " + end;
+  return start || end || "";
+}
+
+function buildPrintListSection(title, items){
+  const nonEmpty = (items || []).map(v => (v || "").trim()).filter(Boolean);
+  const section = document.createElement('div');
+  section.className = "print-section";
+  const h2 = document.createElement('h2');
+  h2.textContent = title;
+  section.appendChild(h2);
+  if(nonEmpty.length === 0){
+    const p = document.createElement('p');
+    p.className = "print-empty";
+    p.textContent = "Nothing added yet.";
+    section.appendChild(p);
+  } else {
+    const ol = document.createElement('ol');
+    ol.className = "print-list";
+    nonEmpty.forEach(v => {
+      const li = document.createElement('li');
+      li.textContent = v;
+      ol.appendChild(li);
+    });
+    section.appendChild(ol);
+  }
+  return section;
+}
+
+function buildPrintActionsSection(actions){
+  const rows = (actions || []).filter(a =>
+    (a.action||"").trim() || (a.duration||"").trim() || (a.time||"").trim() ||
+    (a.resources||"").trim() || (a.status||"").trim()
+  );
+  const section = document.createElement('div');
+  section.className = "print-section";
+  const h2 = document.createElement('h2');
+  h2.textContent = "Actions (Mission)";
+  section.appendChild(h2);
+  if(rows.length === 0){
+    const p = document.createElement('p');
+    p.className = "print-empty";
+    p.textContent = "No actions added yet.";
+    section.appendChild(p);
+  } else {
+    let html = '<table class="print-table"><thead><tr>' +
+      '<th>Action</th><th>Duration</th><th>Time of day</th><th>Resources required</th><th>Status</th>' +
+      '</tr></thead><tbody>';
+    rows.forEach(a => {
+      html += '<tr>' +
+        '<td>' + (escapeHtml(a.action) || '—') + '</td>' +
+        '<td>' + (escapeHtml(formatDateRangeDisplay(a.duration)) || '—') + '</td>' +
+        '<td>' + (escapeHtml(formatTimeRangeDisplay(a.time)) || '—') + '</td>' +
+        '<td>' + (escapeHtml(a.resources) || '—') + '</td>' +
+        '<td>' + (a.status ? '<span class="print-status-pill">'+escapeHtml(a.status)+'</span>' : '—') + '</td>' +
+        '</tr>';
+    });
+    html += '</tbody></table>';
+    section.insertAdjacentHTML('beforeend', html);
+  }
+  return section;
+}
+
+function buildPrintLogSection(log){
+  const rows = (log || []).filter(e =>
+    (e.date||"").trim() || (e.time||"").trim() || (e.change||"").trim() || (e.reason||"").trim()
+  );
+  const section = document.createElement('div');
+  section.className = "print-section";
+  const h2 = document.createElement('h2');
+  h2.textContent = "Adjustments Log";
+  section.appendChild(h2);
+  if(rows.length === 0){
+    const p = document.createElement('p');
+    p.className = "print-empty";
+    p.textContent = "No adjustments logged yet.";
+    section.appendChild(p);
+  } else {
+    let html = '<table class="print-table"><thead><tr>' +
+      '<th>Date</th><th>Time</th><th>Change made</th><th>Reason</th>' +
+      '</tr></thead><tbody>';
+    rows.forEach(e => {
+      html += '<tr>' +
+        '<td>' + (escapeHtml(formatDateDisplay(e.date)) || '—') + '</td>' +
+        '<td>' + (escapeHtml(formatTimeDisplay(e.time)) || '—') + '</td>' +
+        '<td>' + (escapeHtml(e.change) || '—') + '</td>' +
+        '<td>' + (escapeHtml(e.reason) || '—') + '</td>' +
+        '</tr>';
+    });
+    html += '</tbody></table>';
+    section.insertAdjacentHTML('beforeend', html);
+  }
+  return section;
+}
+
+function buildPrintPlanNode(plan, {showOwnHeader}){
+  const wrap = document.createElement('div');
+  wrap.className = "print-plan";
+
+  if(showOwnHeader){
+    const header = document.createElement('div');
+    header.className = "print-plan-header";
+    const h1 = document.createElement('h1');
+    h1.textContent = plan.title || "Untitled Plan";
+    header.appendChild(h1);
+    const date = document.createElement('p');
+    date.className = "print-date";
+    date.textContent = "Generated " + formatDateDisplay(todayISO());
+    header.appendChild(date);
+    wrap.appendChild(header);
+  }
+
+  wrap.appendChild(buildPrintListSection("Vision (Main Objective)", plan.visions));
+  wrap.appendChild(buildPrintListSection("Motive (Why)", plan.motives));
+  wrap.appendChild(buildPrintActionsSection(plan.actions));
+  wrap.appendChild(buildPrintLogSection(plan.log));
+  return wrap;
+}
+
+function runPrintReport(nodes){
+  const container = document.getElementById('printReport');
+  container.innerHTML = "";
+  const reportRoot = document.createElement('div');
+  reportRoot.className = "print-report";
+  nodes.forEach(n => reportRoot.appendChild(n));
+  container.appendChild(reportRoot);
+
+  document.documentElement.classList.add('printing-report');
+
+  function cleanup(){
+    document.documentElement.classList.remove('printing-report');
+    container.innerHTML = "";
+    window.removeEventListener('afterprint', cleanup);
+  }
+  window.addEventListener('afterprint', cleanup);
+
+  window.print();
+  // Safety net in case afterprint doesn't fire (some mobile browsers).
+  setTimeout(cleanup, 4000);
+}
+
+function printCurrentPlanReport(){
+  const plan = activePlan();
+  if(!plan){ alert("Create a plan first."); return; }
+  runPrintReport([ buildPrintPlanNode(plan, {showOwnHeader:true}) ]);
+}
+
+function printAllPlansReport(){
+  if(!plans || plans.length === 0){ alert("Create a plan first."); return; }
+
+  const cover = document.createElement('div');
+  cover.className = "print-cover";
+  cover.innerHTML =
+    '<p class="print-kicker">Plan Board</p>' +
+    '<h1>Full Report</h1>' +
+    '<p class="print-date">Generated ' + escapeHtml(formatDateDisplay(todayISO())) + ' &middot; ' + plans.length + ' plan' + (plans.length===1?'':'s') + '</p>';
+  const toc = document.createElement('ol');
+  toc.className = "print-toc";
+  plans.forEach((p, i) => {
+    const li = document.createElement('li');
+    li.innerHTML = '<span>' + (i+1) + '. ' + escapeHtml(p.title || "Untitled Plan") + '</span>';
+    toc.appendChild(li);
+  });
+  cover.appendChild(toc);
+
+  const planNodes = plans.map(p => buildPrintPlanNode(p, {showOwnHeader:true}));
+  runPrintReport([cover, ...planNodes]);
+}
+
+// Kept for backward compatibility in case anything else still calls it.
+function printBoard(){ printCurrentPlanReport(); }
 
 function toggleFileMenu(evt){
   evt.stopPropagation();
@@ -3292,6 +3516,8 @@ showView('home');
       <div class="feedback-status" id="feedbackStatus"></div>
     </div>
   </div>
+
+  <div id="printReport"></div>
 
   <div class="confirm-overlay" id="confirmOverlay" onclick="if(event.target===this) closeConfirmModal()">
     <div class="confirm-panel">
