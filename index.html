@@ -1002,12 +1002,9 @@
   }
   .actions-table{ min-width:800px; }
   .actions-table th:nth-child(1){ min-width:170px; }
-  .actions-table th:nth-child(2){ min-width:170px; }
-  .actions-table th:nth-child(3){ min-width:170px; }
   .actions-table th:nth-child(4){ min-width:150px; }
   .actions-table th:nth-child(5){ min-width:140px; }
   .log-table{ min-width:620px; }
-  .log-table th:nth-child(2){ min-width:100px; }
   .log-table th:nth-child(3){ min-width:220px; }
   .log-table th:nth-child(4){ min-width:180px; }
   thead th{
@@ -1067,7 +1064,6 @@
     flex-direction:column;
     gap:4px;
     padding:6px;
-    min-width:210px;
   }
   .pill-field{ position:relative; }
   .date-select-group, .time-select-group{
@@ -1075,15 +1071,17 @@
     align-items:center;
   }
   /* Single-cell date/time pill: one clickable pill (icon + label/value)
-     per field. Clicking it opens the browser's own native date/time
-     picker via a hidden native input — no typing, no segmented
-     dropdowns. */
+     per field. Clicking it opens a custom popover — no typing, no
+     segmented dropdowns. Fixed width (rather than shrink-to-fit) so a
+     paired "From"/"To" pair stays the same size in every state —
+     cleared, placeholder-only, or holding a formatted value. */
   .dt-pill{
     display:inline-flex;
     align-items:center;
-    gap:6px;
+    gap:5px;
+    width:100%;
     max-width:100%;
-    padding:7px 12px;
+    padding:6px 10px;
     background:var(--surface-alt);
     border:1.5px solid var(--line);
     border-radius:999px;
@@ -1094,6 +1092,15 @@
     cursor:pointer;
     transition:border-color .15s ease, background-color .15s ease, box-shadow .15s ease;
   }
+  /* No fixed pixel width: the pill sizes itself to its own content
+     (icon + label/value) with this as a floor so it never gets
+     smaller than "icon + From" in the cleared state. Inside a
+     paired From/To range-cell (flex column, align-items:stretch by
+     default), both pills are stretched to whichever one naturally
+     needs more room, so From and To always end up the same width —
+     the compact "From" size when both are cleared, or a bit wider
+     if either holds a longer formatted value. */
+  .date-select-group .dt-pill, .time-select-group .dt-pill{ min-width:78px; }
   .dt-pill:hover{
     border-color:var(--navy); background:var(--surface); box-shadow:0 2px 8px rgba(31,78,120,0.1);
   }
@@ -2386,7 +2393,7 @@ function buildLogSection(log){
 
   const table = document.createElement('table');
   table.className = "log-table";
-  table.innerHTML = `<thead><tr><th style="width:110px;">Date</th><th style="width:100px;">Time</th><th>Change Made</th><th>Reason</th><th></th></tr></thead>`;
+  table.innerHTML = `<thead><tr><th>Date</th><th>Time</th><th>Change Made</th><th>Reason</th><th></th></tr></thead>`;
   const tbody = document.createElement('tbody');
 
   log.forEach((entry, i) => {
