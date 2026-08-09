@@ -3075,18 +3075,10 @@ showView('home');
       }
 
       let view = (typeof currentView !== 'undefined') ? currentView : 'unknown';
-      let planTitle = '';
-      try{
-        if(view === 'myplans' && typeof activePlan === 'function'){
-          const p = activePlan();
-          if(p && p.title) planTitle = p.title;
-        }
-      }catch(e){}
 
       const payload = {
         comment: comment,
         view: view,
-        planTitle: planTitle,
         timestamp: new Date().toISOString(),
         userAgent: navigator.userAgent,
         website: document.getElementById('feedbackHoneypot').value
