@@ -1,4 +1,4 @@
-    const FEEDBACK_WORKER_URL = "https://myplanfeedback.eliabungata.workers.dev";
+const FEEDBACK_WORKER_URL = "https://myplanfeedback.eliabungata.workers.dev";
     const FEEDBACK_HINT_KEY = "planBoardFeedbackHintDismissed";
 
     function dismissFeedbackHint(){
@@ -130,5 +130,11 @@
       if(action) action();
     });
     document.addEventListener('keydown', (e) => {
-      if(e.key === 'Escape' && document.getElementById('confirmOverlay').classList.contains('open')) closeConfirmModal();
+      const overlayOpen = document.getElementById('confirmOverlay').classList.contains('open');
+      if(!overlayOpen) return;
+      if(e.key === 'Escape') closeConfirmModal();
+      else if(e.key === 'Enter'){
+        e.preventDefault();
+        document.getElementById('confirmDeleteBtn').click();
+      }
     });
