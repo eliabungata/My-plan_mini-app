@@ -2172,9 +2172,11 @@ function importPlans(evt){
 }
 // ---------- Printable report ----------
 // Builds a clean, purpose-formatted document (not a screenshot of the
-// editable board) into #printReport, then triggers the browser print
-// dialog. Raw textareas/pills/toggle buttons become plain text, dates
-// and times are formatted for reading, and empty rows are dropped.
+// editable board) into #printReport, then shows only that container.
+// IMPORTANT: this triggers on the browser's actual print lifecycle
+// (beforeprint/afterprint + a matchMedia('print') fallback), not just
+// on our own menu buttons — so a native Ctrl+P, a phone's share-sheet
+// "Print", etc. all get the arranged report too, never the raw screen.
 
 function escapeHtml(s){
   return String(s == null ? "" : s).replace(/[&<>"']/g, c => ({
@@ -2313,54 +2315,87 @@ function buildPrintPlanNode(plan, {showOwnHeader}){
   return wrap;
 }
 
-function runPrintReport(nodes){
+// mode: 'current' | 'all'. Drives what gets built when printing actually
+// starts (see the beforeprint/matchMedia wiring below).
+let pendingPrintMode = 'current';
+let printReportActive = false;
+
+function activatePrintReport(){
+  if(printReportActive) return;
+  printReportActive = true;
+
   const container = document.getElementById('printReport');
   container.innerHTML = "";
   const reportRoot = document.createElement('div');
   reportRoot.className = "print-report";
-  nodes.forEach(n => reportRoot.appendChild(n));
-  container.appendChild(reportRoot);
 
-  document.documentElement.classList.add('printing-report');
-
-  function cleanup(){
-    document.documentElement.classList.remove('printing-report');
-    container.innerHTML = "";
-    window.removeEventListener('afterprint', cleanup);
+  if(pendingPrintMode === 'all' && plans && plans.length > 0){
+    const cover = document.createElement('div');
+    cover.className = "print-cover";
+    cover.innerHTML =
+      '<p class="print-kicker">Plan Board</p>' +
+      '<h1>Full Report</h1>' +
+      '<p class="print-date">Generated ' + escapeHtml(formatDateDisplay(todayISO())) + ' &middot; ' + plans.length + ' plan' + (plans.length===1?'':'s') + '</p>';
+    const toc = document.createElement('ol');
+    toc.className = "print-toc";
+    plans.forEach((p, i) => {
+      const li = document.createElement('li');
+      li.innerHTML = '<span>' + (i+1) + '. ' + escapeHtml(p.title || "Untitled Plan") + '</span>';
+      toc.appendChild(li);
+    });
+    cover.appendChild(toc);
+    reportRoot.appendChild(cover);
+    plans.forEach(p => reportRoot.appendChild(buildPrintPlanNode(p, {showOwnHeader:true})));
+  } else {
+    const plan = activePlan();
+    if(plan){
+      reportRoot.appendChild(buildPrintPlanNode(plan, {showOwnHeader:true}));
+    } else {
+      const empty = document.createElement('p');
+      empty.className = "print-empty";
+      empty.textContent = "No plan to print yet.";
+      reportRoot.appendChild(empty);
+    }
   }
-  window.addEventListener('afterprint', cleanup);
 
-  window.print();
-  // Safety net in case afterprint doesn't fire (some mobile browsers).
-  setTimeout(cleanup, 4000);
+  container.appendChild(reportRoot);
+  document.documentElement.classList.add('printing-report');
+}
+
+function deactivatePrintReport(){
+  if(!printReportActive) return;
+  printReportActive = false;
+  document.documentElement.classList.remove('printing-report');
+  document.getElementById('printReport').innerHTML = "";
+  pendingPrintMode = 'current';
+}
+
+// The actual report-building/hiding happens here, driven by the real
+// print lifecycle — so it fires whether printing was started from our
+// File-menu buttons, a native Ctrl+P, or a mobile browser's share-sheet
+// print option. beforeprint/afterprint cover most desktop browsers;
+// matchMedia('print') is the more reliable signal on Firefox and older
+// Safari, so both are wired up (activatePrintReport/deactivatePrintReport
+// are idempotent, so firing twice is harmless).
+window.addEventListener('beforeprint', activatePrintReport);
+window.addEventListener('afterprint', deactivatePrintReport);
+if(window.matchMedia){
+  const printMql = window.matchMedia('print');
+  const onPrintChange = (e) => { if(e.matches) activatePrintReport(); else deactivatePrintReport(); };
+  if(printMql.addEventListener) printMql.addEventListener('change', onPrintChange);
+  else if(printMql.addListener) printMql.addListener(onPrintChange); // older Safari
 }
 
 function printCurrentPlanReport(){
-  const plan = activePlan();
-  if(!plan){ alert("Create a plan first."); return; }
-  runPrintReport([ buildPrintPlanNode(plan, {showOwnHeader:true}) ]);
+  if(!activePlan()){ alert("Create a plan first."); return; }
+  pendingPrintMode = 'current';
+  window.print();
 }
 
 function printAllPlansReport(){
   if(!plans || plans.length === 0){ alert("Create a plan first."); return; }
-
-  const cover = document.createElement('div');
-  cover.className = "print-cover";
-  cover.innerHTML =
-    '<p class="print-kicker">Plan Board</p>' +
-    '<h1>Full Report</h1>' +
-    '<p class="print-date">Generated ' + escapeHtml(formatDateDisplay(todayISO())) + ' &middot; ' + plans.length + ' plan' + (plans.length===1?'':'s') + '</p>';
-  const toc = document.createElement('ol');
-  toc.className = "print-toc";
-  plans.forEach((p, i) => {
-    const li = document.createElement('li');
-    li.innerHTML = '<span>' + (i+1) + '. ' + escapeHtml(p.title || "Untitled Plan") + '</span>';
-    toc.appendChild(li);
-  });
-  cover.appendChild(toc);
-
-  const planNodes = plans.map(p => buildPrintPlanNode(p, {showOwnHeader:true}));
-  runPrintReport([cover, ...planNodes]);
+  pendingPrintMode = 'all';
+  window.print();
 }
 
 // Kept for backward compatibility in case anything else still calls it.
