@@ -691,16 +691,40 @@ if(window.matchMedia){
   else if(printMql.addListener) printMql.addListener(onPrintChange); // older Safari
 }
 
+// Gives the browser a rendered frame before invoking window.print(). On
+// mobile (iOS Safari's share-sheet print, Android Chrome's print
+// activity), calling window.print() immediately after a DOM/class change
+// can snapshot the page before that change has actually painted, which is
+// why "print all" could still show only the current plan. Double
+// requestAnimationFrame waits for the next two paint cycles, which is
+// enough for the browser to have actually rendered the updated report.
+function printAfterRender(){
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      window.print();
+    });
+  });
+}
+
 function printCurrentPlanReport(){
   if(!activePlan()){ alert("Create a plan first."); return; }
   pendingPrintMode = 'current';
-  window.print();
+  // Build the report content immediately, rather than waiting on the
+  // beforeprint/matchMedia listeners below. On mobile browsers, print
+  // goes through an OS-level share sheet that doesn't reliably fire
+  // those events in time, which can leave the report stale or empty
+  // when the print snapshot is taken. Building it up front here removes
+  // that race; activatePrintReport() is idempotent so it's harmless if
+  // beforeprint/matchMedia also fire afterward.
+  activatePrintReport();
+  printAfterRender();
 }
 
 function printAllPlansReport(){
   if(!plans || plans.length === 0){ alert("Create a plan first."); return; }
   pendingPrintMode = 'all';
-  window.print();
+  activatePrintReport();
+  printAfterRender();
 }
 
 // Kept for backward compatibility in case anything else still calls it.
