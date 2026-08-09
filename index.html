@@ -2941,6 +2941,11 @@ showView('home');
   }
 
   const provider = new GoogleAuthProvider();
+  // Always show the account chooser instead of silently reusing whatever
+  // Google session is already active in the browser — reduces the risk
+  // of someone signing into this app just because a Google account
+  // happens to already be logged in on a shared/unlocked device.
+  provider.setCustomParameters({ prompt: "select_account" });
 
   window.signIn = async function(){
     if(!cloudReady){
